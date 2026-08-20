@@ -26,6 +26,7 @@ import { PhoneShell } from "@/components/layout/PhoneShell";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
+import { imageSrcSet, imageUrl, TAILLES } from "@/lib/image";
 import { cn, formatGNF, formatNumber } from "@/lib/utils";
 
 export default function ProductDetail() {
@@ -108,7 +109,7 @@ export default function ProductDetail() {
   if (loading) {
     return (
       <PhoneShell padBottom={false}>
-        <Spinner className="min-h-screen" />
+        <Spinner className="min-h-dvh" />
       </PhoneShell>
     );
   }
@@ -116,7 +117,7 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <PhoneShell padBottom={false}>
-        <div className="p-8 text-center text-sm text-zinc-500">
+        <div className="p-8 text-center text-sm text-muted">
           Ce produit n'existe plus.{" "}
           <Link to="/recherche" className="font-semibold text-brand">
             Retour à la recherche
@@ -136,13 +137,13 @@ export default function ProductDetail() {
       {/* Image + actions flottantes */}
       <div className="relative">
         {product.image_url ? (
-          <img src={product.image_url} alt={product.title} className="h-72 w-full object-cover" />
+          <img src={imageUrl(product.image_url, TAILLES.ficheProduit)} srcSet={imageSrcSet(product.image_url, TAILLES.ficheProduit)} sizes="(max-width: 28rem) 100vw, 28rem" alt={product.title} fetchPriority="high" decoding="async" className="aspect-[4/3] w-full object-cover" />
         ) : (
-          <div className="h-72 w-full bg-zinc-100 flex items-center justify-center text-zinc-300">
+          <div className="h-72 w-full bg-subtle flex items-center justify-center text-faint">
             <Package className="size-12" />
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between p-4 pt-[calc(1rem+var(--safe-top))] safe-x">
           <button
             onClick={() => navigate(-1)}
             className="size-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
@@ -155,7 +156,7 @@ export default function ProductDetail() {
             className="size-9 rounded-full bg-white/90 shadow-sm flex items-center justify-center"
             aria-label="Favori"
           >
-            <Heart className={cn("size-5", product.is_favorite ? "fill-rose-500 text-rose-500" : "text-zinc-600")} />
+            <Heart className={cn("size-5", product.is_favorite ? "fill-rose-500 text-rose-500" : "text-muted")} />
           </button>
         </div>
       </div>
@@ -172,11 +173,11 @@ export default function ProductDetail() {
             {product.stock > 0 ? (
               <Badge variant="outline">{formatNumber(product.stock)} en stock</Badge>
             ) : (
-              <Badge className="bg-rose-100 text-rose-700">Rupture</Badge>
+              <Badge className="bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Rupture</Badge>
             )}
           </div>
           <h1 className="font-bold text-xl leading-7">{product.title}</h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
             {product.region ? (
               <span className="inline-flex items-center gap-1">
                 <MapPin className="size-3.5" />
@@ -197,19 +198,19 @@ export default function ProductDetail() {
 
         <div className="flex items-end gap-2">
           <span className="font-extrabold text-brand text-2xl leading-8">{formatGNF(price)}</span>
-          <span className="pb-1 text-sm text-zinc-500">/ {product.unit}</span>
+          <span className="pb-1 text-sm text-muted">/ {product.unit}</span>
           {price < product.price ? (
-            <span className="pb-1 text-sm text-zinc-400 line-through">{formatGNF(product.price)}</span>
+            <span className="pb-1 text-sm text-faint line-through">{formatGNF(product.price)}</span>
           ) : null}
         </div>
 
         {/* Prix dégressifs */}
         {product.tiers?.length ? (
-          <div className="rounded-2xl border border-zinc-200 overflow-hidden">
-            <div className="bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-600">
+          <div className="rounded-2xl border border-line overflow-hidden">
+            <div className="bg-subtle-soft px-4 py-2.5 text-xs font-semibold text-muted">
               Prix dégressifs par quantité
             </div>
-            <div className="divide-y divide-zinc-100">
+            <div className="divide-y divide-line-soft">
               {product.tiers.map((t) => (
                 <div
                   key={t.min_qty}
@@ -218,7 +219,7 @@ export default function ProductDetail() {
                     quantity >= t.min_qty && price === t.price && "bg-brand/5",
                   )}
                 >
-                  <span className="text-zinc-600">
+                  <span className="text-muted">
                     À partir de {t.min_qty} {product.unit}
                   </span>
                   <span className="font-semibold">{formatGNF(t.price)}</span>
@@ -229,17 +230,17 @@ export default function ProductDetail() {
         ) : null}
 
         {/* Quantité */}
-        <div className="flex items-center justify-between rounded-2xl border border-zinc-200 p-3.5">
+        <div className="flex items-center justify-between rounded-2xl border border-line p-3.5">
           <div>
             <p className="font-semibold text-sm">Quantité</p>
-            <p className="text-xs text-zinc-500">
-              Total : <span className="font-semibold text-zinc-800">{formatGNF(total)}</span>
+            <p className="text-xs text-muted">
+              Total : <span className="font-semibold text-fg-soft">{formatGNF(total)}</span>
             </p>
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => setQuantity((q) => Math.max(product.min_order, q - 1))}
-              className="size-9 rounded-lg border border-zinc-200 flex items-center justify-center disabled:opacity-40"
+              className="size-9 rounded-lg border border-line flex items-center justify-center disabled:opacity-40"
               disabled={quantity <= product.min_order}
               aria-label="Diminuer"
             >
@@ -253,7 +254,7 @@ export default function ProductDetail() {
             />
             <button
               onClick={() => setQuantity((q) => q + 1)}
-              className="size-9 rounded-lg border border-zinc-200 flex items-center justify-center"
+              className="size-9 rounded-lg border border-line flex items-center justify-center"
               aria-label="Augmenter"
             >
               <Plus className="size-4" />
@@ -264,16 +265,16 @@ export default function ProductDetail() {
         {product.description ? (
           <div className="flex flex-col gap-2">
             <h2 className="font-semibold text-base">Description</h2>
-            <p className="text-sm leading-relaxed text-zinc-600 whitespace-pre-line">{product.description}</p>
+            <p className="text-sm leading-relaxed text-muted whitespace-pre-line">{product.description}</p>
           </div>
         ) : null}
 
         {product.delivery ? (
-          <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 p-4">
+          <div className="flex items-start gap-3 rounded-2xl bg-subtle-soft p-4">
             <Truck className="size-5 shrink-0 text-brand" />
             <div>
               <p className="font-semibold text-sm">Livraison</p>
-              <p className="text-xs leading-snug text-zinc-500">{product.delivery}</p>
+              <p className="text-xs leading-snug text-muted">{product.delivery}</p>
             </div>
           </div>
         ) : null}
@@ -281,7 +282,7 @@ export default function ProductDetail() {
         {/* Vendeur */}
         <Link
           to={`/vendeur/${product.seller_id}`}
-          className="flex items-center gap-3 rounded-2xl border border-zinc-200 p-4"
+          className="flex items-center gap-3 rounded-2xl border border-line p-4"
         >
           <Avatar
             name={product.seller_company || product.seller_name}
@@ -294,7 +295,7 @@ export default function ProductDetail() {
               {product.seller_company || product.seller_name}
               {product.seller_verified ? <BadgeCheck className="size-4 shrink-0 text-brand" /> : null}
             </p>
-            <p className="text-xs text-zinc-500 capitalize">
+            <p className="text-xs text-muted capitalize">
               {product.seller_role} · {product.seller_region}
             </p>
             {product.seller_rating ? (
@@ -309,7 +310,7 @@ export default function ProductDetail() {
 
         <div className="flex items-start gap-3 rounded-2xl bg-brand/5 border border-brand/20 p-4">
           <ShieldCheck className="size-5 shrink-0 text-brand" />
-          <p className="text-xs leading-snug text-zinc-600">
+          <p className="text-xs leading-snug text-muted">
             Paiement protégé : les fonds ne sont versés au vendeur qu'une fois la livraison confirmée.
           </p>
         </div>
@@ -317,7 +318,7 @@ export default function ProductDetail() {
         {similar.length ? (
           <div className="flex flex-col gap-3">
             <h2 className="font-semibold text-base">Produits similaires</h2>
-            <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-2">
+            <div className="scroll-x -mx-5 flex gap-3 px-5 pb-2">
               {similar.map((p) => (
                 <div key={p.id} className="w-40 shrink-0">
                   <ProductCard product={p} />
@@ -329,7 +330,7 @@ export default function ProductDetail() {
       </div>
 
       {/* Barre d'action fixe */}
-      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-zinc-200 bg-white/95 p-4 pb-[calc(1rem+var(--safe-bottom))] backdrop-blur">
+      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-line bg-surface/95 p-4 pb-[calc(1rem+var(--safe-bottom))] backdrop-blur safe-x">
         {isOwner ? (
           <Button className="w-full" size="lg" onClick={() => navigate("/espace-vendeur/annonces")}>
             Gérer mon annonce

@@ -1,9 +1,9 @@
 {
-  "name": "sooni-gn",
+  "name": "yehoo",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "SooniGN — marketplace B2B guineenne reliant importateurs, agriculteurs et industriels aux detaillants",
+  "description": "Yehoo — marketplace B2B guineenne reliant importateurs, agriculteurs et industriels aux detaillants",
   "engines": {
     "node": ">=22.5.0"
   },

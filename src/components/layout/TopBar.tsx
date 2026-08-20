@@ -24,7 +24,8 @@ export function TopBar({
   return (
     <header
       className={cn(
-        "flex items-center gap-3 border-b border-zinc-200 bg-white px-4 py-3",
+        // pt calcule : le titre ne passe jamais sous la barre d'etat ou l'encoche.
+        "flex items-center gap-3 border-b border-line bg-surface px-4 pb-3 pt-[calc(0.75rem+var(--safe-top))]",
         sticky && "sticky top-0 z-40",
         className,
       )}
@@ -33,7 +34,7 @@ export function TopBar({
         <button
           type="button"
           onClick={() => (onBack ? onBack() : navigate(-1))}
-          className="size-9 -ml-1.5 rounded-full text-zinc-700 hover:bg-zinc-100 flex items-center justify-center"
+          className="size-9 -ml-1.5 rounded-full text-fg-soft hover:bg-subtle flex items-center justify-center"
           aria-label="Retour"
         >
           <ChevronLeft className="size-5" />
@@ -41,7 +42,7 @@ export function TopBar({
       ) : null}
       <div className="flex-1 min-w-0">
         {title ? <h1 className="font-bold text-lg leading-6 truncate">{title}</h1> : null}
-        {subtitle ? <p className="text-xs text-zinc-500 truncate">{subtitle}</p> : null}
+        {subtitle ? <p className="text-xs text-muted truncate">{subtitle}</p> : null}
       </div>
       {right}
     </header>

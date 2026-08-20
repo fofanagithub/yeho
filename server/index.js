@@ -48,6 +48,6 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   const count = db.prepare("SELECT COUNT(*) AS n FROM users").get().n;
-  console.log(`API SooniGN sur http://localhost:${PORT}`);
+  console.log(`API Yehoo sur http://localhost:${PORT}`);
   if (count === 0) console.log("Base vide — lancez `npm run seed` pour charger les donnees de demonstration.");
 });

@@ -1,5 +1,5 @@
 # =====================================================================
-#  SooniGN - publication du projet sur GitHub
+#  Yehoo - publication du projet sur GitHub
 #  Depot cible : https://github.com/fofanagithub/yeho.git
 #
 #  Utilisation : clic droit sur ce fichier > "Executer avec PowerShell"
@@ -90,7 +90,7 @@ if ($LASTEXITCODE -eq 0) {
     Souci "Aucune modification a enregistrer."
 } else {
     $nbFichiers = (git diff --cached --name-only | Measure-Object -Line).Lines
-    git commit -q -m "SooniGN : marketplace B2B guineenne (front React + API Node/SQLite)"
+    git commit -q -m "Yehoo : marketplace B2B guineenne (front React + API Node/SQLite)"
     Succes "$nbFichiers fichiers enregistres dans un commit."
 }
 

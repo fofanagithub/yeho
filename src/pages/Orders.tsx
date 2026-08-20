@@ -8,6 +8,7 @@ import { PhoneShell } from "@/components/layout/PhoneShell";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
 import { EmptyState, Skeleton } from "@/components/ui/feedback";
+import { imageUrl } from "@/lib/image";
 import { cn, formatDate, formatGNF } from "@/lib/utils";
 
 const TABS = [
@@ -38,14 +39,14 @@ export default function Orders() {
     <PhoneShell padBottom={false}>
       <TopBar title="Mes commandes" subtitle={`${orders.length} commande${orders.length > 1 ? "s" : ""}`} />
 
-      <div className="flex gap-2 border-b border-zinc-100 px-5 py-3">
+      <div className="flex gap-2 border-b border-line-soft px-5 py-3">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-medium transition",
-              tab === t.value ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600",
+              tab === t.value ? "bg-brand text-white" : "bg-subtle text-muted",
             )}
           >
             {t.label}
@@ -78,10 +79,10 @@ export default function Orders() {
             <Link
               key={order.id}
               to={`/commande/${order.id}`}
-              className="rounded-2xl border border-zinc-200 p-4 hover:border-brand/40"
+              className="rounded-2xl border border-line p-4 hover:border-brand/40"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-zinc-500">{order.reference}</span>
+                <span className="font-mono text-xs text-muted">{order.reference}</span>
                 <span
                   className={cn(
                     "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
@@ -92,15 +93,15 @@ export default function Orders() {
                 </span>
               </div>
               <p className="mt-2 text-sm font-semibold">{order.seller?.company || order.seller?.name}</p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted">
                 {order.items.length} article{order.items.length > 1 ? "s" : ""} · {formatDate(order.created_at)}
               </p>
               <div className="mt-3 flex items-center gap-2">
                 {order.items.slice(0, 4).map((item) =>
                   item.image_url ? (
-                    <img key={item.id} src={item.image_url} alt="" className="size-11 rounded-lg object-cover" />
+                    <img key={item.id} src={imageUrl(item.image_url, 44)} alt="" loading="lazy" decoding="async" className="size-11 rounded-lg object-cover" />
                   ) : (
-                    <span key={item.id} className="size-11 rounded-lg bg-zinc-100" />
+                    <span key={item.id} className="size-11 rounded-lg bg-subtle" />
                   ),
                 )}
                 <span className="ml-auto font-extrabold text-brand">{formatGNF(order.total, { short: true })}</span>

@@ -15,11 +15,14 @@ export function PhoneShell({
   padBottom?: boolean;
 }) {
   return (
-    <div className="min-h-screen w-full bg-zinc-100 flex justify-center">
+    // safe-x : en paysage sur un telephone a encoche, le contenu ne passe
+    // jamais sous l'arrondi de l'ecran. Vaut 0 en portrait et sur desktop.
+    <div className="safe-x min-h-dvh w-full bg-canvas flex justify-center">
       <div
         className={cn(
-          "relative w-full max-w-md bg-white min-h-screen shadow-xl shadow-zinc-300/40",
-          padBottom && "pb-24",
+          "relative w-full max-w-md bg-surface min-h-dvh shadow-xl shadow-zinc-300/40",
+          // Reserve la place de la barre de navigation basse + la barre d'accueil du telephone.
+          padBottom && "pb-[calc(6rem+var(--safe-bottom))]",
           className,
         )}
       >

@@ -14,10 +14,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
-/** SOONI_DB permet de pointer une base separee (utilise par les tests). */
-export const DB_PATH = process.env.SOONI_DB
-  ? path.resolve(process.env.SOONI_DB)
-  : path.join(dataDir, "sooni.db");
+/** YEHOO_DB permet de pointer une base separee (utilise par les tests). */
+export const DB_PATH = process.env.YEHOO_DB
+  ? path.resolve(process.env.YEHOO_DB)
+  : path.join(dataDir, "yehoo.db");
 
 const sqlite = new DatabaseSync(DB_PATH);
 sqlite.exec("PRAGMA journal_mode = WAL");

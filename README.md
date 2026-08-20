@@ -1,4 +1,4 @@
-# SooniGN
+# Yehoo
 
 Marketplace B2B guinéenne qui relie les vendeurs en gros — importateurs, agriculteurs, industriels —
 aux détaillants et particuliers. Application mobile-first construite à partir des maquettes du dossier
@@ -102,8 +102,8 @@ traitement des commandes reçues).
 - Le panier vit dans le navigateur (localStorage) ; tout le reste est en base.
 - Les images de démonstration pointent vers Unsplash. Les images envoyées via le formulaire
   de publication sont stockées dans `server/uploads/`.
-- La base SQLite est créée automatiquement dans `server/data/sooni.db` au premier lancement.
-  La variable `SOONI_DB` permet de pointer un autre fichier.
+- La base SQLite est créée automatiquement dans `server/data/yehoo.db` au premier lancement.
+  La variable `YEHOO_DB` permet de pointer un autre fichier.
 - `node:sqlite` est plus strict que les pilotes tiers sur la liaison des paramètres : il
   refuse `undefined`, les booléens, et les clés qui ne correspondent à aucun paramètre
   nommé de la requête. Passez des `null` et des entiers `0`/`1`.

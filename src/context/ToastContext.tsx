@@ -13,9 +13,9 @@ const ToastContext = createContext<{ toast: (message: string, kind?: ToastKind) 
 
 const ICONS = { success: CheckCircle2, error: XCircle, info: Info };
 const STYLES = {
-  success: "bg-zinc-900 text-white",
+  success: "bg-fg text-canvas",
   error: "bg-rose-600 text-white",
-  info: "bg-zinc-800 text-white",
+  info: "bg-fg text-canvas",
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

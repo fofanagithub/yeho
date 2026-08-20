@@ -63,14 +63,14 @@ export default function SellerOrders() {
     <PhoneShell padBottom={false}>
       <TopBar title="Commandes reçues" subtitle={`${orders.length} au total`} />
 
-      <div className="flex gap-2 border-b border-zinc-100 px-5 py-3">
+      <div className="flex gap-2 border-b border-line-soft px-5 py-3">
         {TABS.map((t) => (
           <button
             key={t.value}
             onClick={() => setTab(t.value)}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-medium transition",
-              tab === t.value ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600",
+              tab === t.value ? "bg-brand text-white" : "bg-subtle text-muted",
             )}
           >
             {t.label}
@@ -91,9 +91,9 @@ export default function SellerOrders() {
           filtered.map((order) => {
             const next = NEXT[order.status];
             return (
-              <div key={order.id} className="rounded-2xl border border-zinc-200 p-4">
+              <div key={order.id} className="rounded-2xl border border-line p-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] text-zinc-400">{order.reference}</span>
+                  <span className="font-mono text-[11px] text-faint">{order.reference}</span>
                   <span
                     className={cn(
                       "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
@@ -106,12 +106,12 @@ export default function SellerOrders() {
 
                 <Link to={`/commande/${order.id}`} className="mt-2 block">
                   <p className="text-sm font-semibold">{order.buyer?.company || order.buyer?.name}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted">
                     {order.contact_phone} · {timeAgo(order.created_at)}
                   </p>
                   <ul className="mt-2 flex flex-col gap-1">
                     {order.items.map((item) => (
-                      <li key={item.id} className="flex items-center justify-between text-xs text-zinc-600">
+                      <li key={item.id} className="flex items-center justify-between text-xs text-muted">
                         <span className="truncate pr-2">
                           {item.quantity} × {item.title}
                         </span>
@@ -121,12 +121,12 @@ export default function SellerOrders() {
                       </li>
                     ))}
                   </ul>
-                  <p className="mt-2 text-xs text-zinc-500">
+                  <p className="mt-2 text-xs text-muted">
                     {order.delivery_mode === "retrait" ? "Retrait sur place" : `Livraison — ${order.address}`}
                   </p>
                 </Link>
 
-                <div className="mt-3 flex items-center gap-2 border-t border-zinc-100 pt-3">
+                <div className="mt-3 flex items-center gap-2 border-t border-line-soft pt-3">
                   <span className="flex-1 font-extrabold text-brand">{formatGNF(order.total)}</span>
                   {next ? (
                     <Button size="sm" loading={busy === order.id} onClick={() => advance(order)}>

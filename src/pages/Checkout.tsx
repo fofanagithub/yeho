@@ -11,6 +11,7 @@ import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
+import { imageUrl } from "@/lib/image";
 import { formatGNF } from "@/lib/utils";
 
 const DELIVERY_FEE = 150000;
@@ -165,19 +166,19 @@ export default function Checkout() {
         {/* Récapitulatif */}
         <section className="flex flex-col gap-3">
           <h2 className="font-semibold text-base">Récapitulatif</h2>
-          <div className="rounded-2xl border border-zinc-200 divide-y divide-zinc-100">
+          <div className="rounded-2xl border border-line divide-y divide-line-soft">
             {lines.map((l) => (
               <div key={l.product_id} className="flex items-center gap-3 p-3.5">
                 {l.image_url ? (
-                  <img src={l.image_url} alt="" className="size-12 rounded-lg object-cover" />
+                  <img src={imageUrl(l.image_url, 48)} alt="" loading="lazy" decoding="async" className="size-12 rounded-lg object-cover" />
                 ) : (
-                  <span className="size-12 rounded-lg bg-zinc-100 text-zinc-400 flex items-center justify-center">
+                  <span className="size-12 rounded-lg bg-subtle text-faint flex items-center justify-center">
                     <Package className="size-5" />
                   </span>
                 )}
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-medium">{l.title}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted">
                     {l.quantity} × {formatGNF(unitPrice(l))}
                   </p>
                 </div>
@@ -186,10 +187,10 @@ export default function Checkout() {
             ))}
           </div>
 
-          <div className="rounded-2xl bg-zinc-50 p-4 text-sm">
+          <div className="rounded-2xl bg-subtle-soft p-4 text-sm">
             <Row label="Sous-total" value={formatGNF(subtotal)} />
             <Row label={`Livraison (${bySeller.length} vendeur${bySeller.length > 1 ? "s" : ""})`} value={formatGNF(fees)} />
-            <div className="mt-2 flex items-center justify-between border-t border-zinc-200 pt-2">
+            <div className="mt-2 flex items-center justify-between border-t border-line pt-2">
               <span className="font-semibold">Total à payer</span>
               <span className="font-extrabold text-brand text-lg">{formatGNF(total)}</span>
             </div>
@@ -197,7 +198,7 @@ export default function Checkout() {
 
           <div className="flex items-start gap-3 rounded-2xl bg-brand/5 border border-brand/20 p-4">
             <MapPin className="size-5 shrink-0 text-brand" />
-            <p className="text-xs leading-snug text-zinc-600">
+            <p className="text-xs leading-snug text-muted">
               Le vendeur confirme votre commande sous 24 h. Vous pouvez suivre chaque étape depuis
               l'onglet Commandes.
             </p>
@@ -205,7 +206,7 @@ export default function Checkout() {
         </section>
       </form>
 
-      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-zinc-200 bg-white p-5 pb-[calc(1.25rem+var(--safe-bottom))]">
+      <div className="fixed bottom-0 left-1/2 z-50 w-full max-w-md -translate-x-1/2 border-t border-line bg-surface p-5 pb-[calc(1.25rem+var(--safe-bottom))] safe-x">
         <Button type="submit" form="checkout-form" size="lg" className="w-full" loading={loading}>
           <Check className="size-5" />
           Confirmer — {formatGNF(total)}
@@ -217,7 +218,7 @@ export default function Checkout() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-0.5 text-zinc-500">
+    <div className="flex items-center justify-between py-0.5 text-muted">
       <span>{label}</span>
       <span>{value}</span>
     </div>

@@ -16,7 +16,8 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
   const { user } = useAuth();
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full max-w-md border-t border-zinc-200 bg-white/95 backdrop-blur">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full max-w-md border-t border-line bg-surface/95 backdrop-blur safe-x">
+      {/* pb : les libelles restent au-dessus de la barre d'accueil du telephone. */}
       <div className="grid grid-cols-5 pb-[var(--safe-bottom)]">
         {ITEMS.map(({ to, label, icon: Icon, highlight }) => {
           const active = pathname === to || pathname.startsWith(to + "/");
@@ -26,7 +27,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
                 <span className="size-11 -mt-5 rounded-2xl bg-brand text-white shadow-lg shadow-brand/30 flex items-center justify-center">
                   <Icon className="size-6" />
                 </span>
-                <span className="mt-0.5 text-[10px] text-zinc-500">{label}</span>
+                <span className="mt-0.5 text-[10px] text-muted">{label}</span>
               </NavLink>
             );
           }
@@ -36,7 +37,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
               to={to}
               className={cn(
                 "relative flex flex-col items-center gap-0.5 pt-2.5 pb-2 transition-colors",
-                active ? "text-brand" : "text-zinc-500",
+                active ? "text-brand" : "text-muted",
               )}
             >
               <Icon className={cn("size-5", active && "stroke-[2.4]")} />

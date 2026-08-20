@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEST_DB = path.join(__dirname, "data", "test.db");
 const PORT = 4100;
 const BASE = `http://localhost:${PORT}`;
-const env = { ...process.env, SOONI_DB: TEST_DB, PORT: String(PORT) };
+const env = { ...process.env, YEHOO_DB: TEST_DB, PORT: String(PORT) };
 
 let failures = 0;
 const ok = (label, condition, detail = "") => {
@@ -106,6 +106,38 @@ try {
   ok("jeton valide renvoie le profil", r.body.user?.name === "Mamadou Barry");
   r = await call("GET", "/api/auth/me");
   ok("acces sans jeton refuse", r.status === 401);
+
+  console.log("\n--- Unicite du numero ---");
+  r = await call("GET", "/api/auth/check-phone?phone=620000007");
+  ok("numero deja pris signale avant validation", r.body.valid === true && r.body.available === false);
+  r = await call("GET", "/api/auth/check-phone?phone=%2B224620000007");
+  ok("meme numero au format +224 aussi detecte", r.body.available === false);
+  r = await call("GET", "/api/auth/check-phone?phone=0620000007");
+  ok("meme numero avec un zero devant aussi detecte", r.body.available === false);
+  r = await call("GET", "/api/auth/check-phone?phone=622334455");
+  ok("numero libre annonce disponible", r.body.valid === true && r.body.available === true);
+  r = await call("GET", "/api/auth/check-phone?phone=6200");
+  ok("numero incomplet signale invalide", r.body.valid === false);
+  r = await call("POST", "/api/auth/register", {
+    body: { phone: "6200", password: "azerty12", name: "Trop court", role: "particulier" },
+  });
+  ok("inscription avec numero invalide refusee", r.status === 400);
+
+  // L'inscription ouvre la session : le jeton renvoye doit donner acces tout de suite.
+  r = await call("POST", "/api/auth/register", {
+    body: { phone: "623 11 22 33", password: "azerty12", name: "Aissatou Diallo", role: "agriculteur", region: "Labé" },
+  });
+  const nouveauJeton = r.body.token;
+  ok("inscription renvoie un jeton de session", r.status === 201 && !!nouveauJeton);
+  r = await call("GET", "/api/auth/me", { token: nouveauJeton });
+  ok("acces a l'application juste apres l'inscription", r.status === 200 && r.body.user?.name === "Aissatou Diallo");
+  r = await call("POST", "/api/products", {
+    token: nouveauJeton,
+    body: { title: "Premiere annonce", category: "agriculture", price: 50000 },
+  });
+  ok("le nouveau vendeur peut publier immediatement", r.status === 201);
+  // On retire cette annonce pour que le catalogue retrouve son compte de reference.
+  if (r.body.product?.id) await call("DELETE", `/api/products/${r.body.product.id}`, { token: nouveauJeton });
 
   console.log("\n--- Catalogue ---");
   r = await call("GET", "/api/products");

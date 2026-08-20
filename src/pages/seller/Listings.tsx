@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Skeleton } from "@/components/ui/feedback";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { imageUrl } from "@/lib/image";
 import { cn, formatGNF, formatNumber, timeAgo } from "@/lib/utils";
 
 export default function Listings() {
@@ -77,14 +78,14 @@ export default function Listings() {
         }
       />
 
-      <div className="flex gap-2 border-b border-zinc-100 px-5 py-3">
+      <div className="flex gap-2 border-b border-line-soft px-5 py-3">
         {(["active", "paused"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-medium transition",
-              filter === f ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600",
+              filter === f ? "bg-brand text-white" : "bg-subtle text-muted",
             )}
           >
             {f === "active" ? "Actives" : "En pause"} (
@@ -109,12 +110,12 @@ export default function Listings() {
           />
         ) : (
           filtered.map((product) => (
-            <div key={product.id} className="rounded-2xl border border-zinc-200 p-3.5">
+            <div key={product.id} className="rounded-2xl border border-line p-3.5">
               <div className="flex gap-3">
                 {product.image_url ? (
-                  <img src={product.image_url} alt="" className="size-20 shrink-0 rounded-xl object-cover" />
+                  <img src={imageUrl(product.image_url, 80)} alt="" loading="lazy" decoding="async" className="size-20 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <div className="size-20 shrink-0 rounded-xl bg-zinc-100" />
+                  <div className="size-20 shrink-0 rounded-xl bg-subtle" />
                 )}
                 <div className="flex-1 min-w-0">
                   <Link to={`/produit/${product.id}`} className="line-clamp-2 text-sm font-semibold leading-5">
@@ -122,9 +123,9 @@ export default function Listings() {
                   </Link>
                   <p className="mt-0.5 text-sm font-bold text-brand">
                     {formatGNF(product.price)}
-                    <span className="text-xs font-normal text-zinc-500"> / {product.unit}</span>
+                    <span className="text-xs font-normal text-muted"> / {product.unit}</span>
                   </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted">
                     <span className="inline-flex items-center gap-1">
                       <Eye className="size-3" />
                       {formatNumber(product.views)}
@@ -136,7 +137,7 @@ export default function Listings() {
                 </div>
               </div>
 
-              <div className="mt-3 flex gap-2 border-t border-zinc-100 pt-3">
+              <div className="mt-3 flex gap-2 border-t border-line-soft pt-3">
                 <Button variant="ghost" size="sm" className="flex-1" onClick={() => navigate(`/publier/${product.id}`)}>
                   <Pencil className="size-3.5" />
                   Modifier

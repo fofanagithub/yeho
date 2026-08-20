@@ -1,18 +1,82 @@
 @import "tailwindcss";
 
+/* Le theme sombre est pilote par la classe .dark posee sur <html>,
+   et non par la media query : l'utilisateur peut ainsi forcer clair ou
+   sombre depuis son profil, independamment du reglage du telephone. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand: #00c950;
   --color-brand-dark: oklch(0.55 0.16 150);
   --color-brand-deep: oklch(0.35 0.09 150);
-  --color-muted-fg: #71717b;
   --radius: 0.75rem;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Jetons semantiques : les ecrans ne nomment plus une couleur ("zinc-200")
+ * mais un role ("line"). Basculer de theme revient alors a redefinir
+ * une poignee de variables, sans toucher aux composants.
+ */
+@theme inline {
+  --color-canvas: var(--c-canvas); /* fond derriere le cadre du telephone */
+  --color-surface: var(--c-surface); /* cartes, barres, fond des pages */
+  --color-subtle: var(--c-subtle); /* aplats discrets, pastilles */
+  --color-subtle-soft: var(--c-subtle-soft);
+  --color-subtle-strong: var(--c-subtle-strong);
+  --color-fg: var(--c-fg); /* texte principal */
+  --color-fg-soft: var(--c-fg-soft); /* titres secondaires */
+  --color-muted: var(--c-muted); /* texte d'accompagnement */
+  --color-faint: var(--c-faint); /* texte tertiaire, icones inertes */
+  --color-line: var(--c-line); /* bordures */
+  --color-line-soft: var(--c-line-soft); /* separateurs internes */
 }
 
 :root {
   font-family: var(--font-sans);
   color-scheme: light;
+
+  --c-canvas: #f4f4f5;
+  --c-surface: #ffffff;
+  --c-subtle: #f4f4f5;
+  --c-subtle-soft: #fafafa;
+  --c-subtle-strong: #e4e4e7;
+  --c-fg: #09090b;
+  --c-fg-soft: #27272a;
+  --c-muted: #71717b;
+  /* Plus sombre que le gris habituel des maquettes : a 2,6:1 le texte
+     tertiaire devenait illisible en plein soleil. Ici 3,2:1. */
+  --c-faint: #8e8e98;
+  --c-line: #e4e4e7;
+  --c-line-soft: #f4f4f5;
+
+  /* Encoches, barre d'etat et barre d'accueil du telephone.
+     Valent 0 sur un ecran classique : aucun effet sur desktop. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Marge laterale standard du contenu. */
+  --gutter: 1.25rem;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Gris tres sombres plutot que du noir pur : moins fatigant a lire,
+     et les bordures restent perceptibles. */
+  --c-canvas: #09090b;
+  --c-surface: #17171a;
+  --c-subtle: #232327;
+  --c-subtle-soft: #1c1c20;
+  --c-subtle-strong: #3f3f46;
+  --c-fg: #fafafa;
+  --c-fg-soft: #e4e4e7;
+  --c-muted: #a1a1aa;
+  --c-faint: #83838d;
+  --c-line: #2e2e34;
+  --c-line-soft: #232327;
 }
 
 * {
@@ -23,19 +87,60 @@
   display: none;
 }
 
+html {
+  /* Empeche iOS d'agrandir le texte en paysage. */
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
   font-size: 16px;
   line-height: 24px;
-  background: #f4f4f5;
-  color: oklch(0.141 0.005 285.823);
+  background: var(--c-canvas);
+  color: var(--c-fg);
   -webkit-font-smoothing: antialiased;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+  /* Coupe l'effet de rebond qui laisse voir le fond derriere la page. */
+  overscroll-behavior-y: none;
+}
+
+/* Defilement fluide, sauf si l'utilisateur a demande moins d'animations. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* ---- Utilitaires maison ---- */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* Zones sures : a poser sur les elements qui touchent un bord de l'ecran. */
+.safe-x {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+.safe-top {
+  padding-top: var(--safe-top);
+}
+.safe-bottom {
+  padding-bottom: var(--safe-bottom);
+}
+
+/* Defilement horizontal des carrousels : inertie et arret net sur chaque carte. */
+.scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  scroll-padding-left: var(--gutter);
+}
+.scroll-x > * {
+  scroll-snap-align: start;
 }
 
 @keyframes fade-up {

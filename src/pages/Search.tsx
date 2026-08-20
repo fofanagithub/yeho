@@ -90,7 +90,7 @@ export default function Search() {
 
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white px-4 pb-3 pt-4">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface px-4 pb-3 pt-[calc(1rem+var(--safe-top))]">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -99,7 +99,7 @@ export default function Search() {
           className="flex items-center gap-2"
         >
           <div className="relative flex-1">
-            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+            <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -113,7 +113,7 @@ export default function Search() {
                   setQuery("");
                   updateParam("q", "");
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-faint"
               >
                 <X className="size-4" />
               </button>
@@ -146,7 +146,7 @@ export default function Search() {
         </div>
 
         {showFilters ? (
-          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 animate-fade-up">
+          <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-line bg-subtle-soft p-4 animate-fade-up">
             <div className="grid grid-cols-2 gap-3">
               <Field label="Région">
                 <Select value={region} onChange={(e) => updateParam("region", e.target.value)}>
@@ -199,20 +199,20 @@ export default function Search() {
       </header>
 
       <div className="flex items-center justify-between px-5 py-3">
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted">
           {loading ? "Recherche…" : `${products.length} résultat${products.length > 1 ? "s" : ""}`}
         </p>
-        <div className="flex items-center gap-1 rounded-lg bg-zinc-100 p-0.5">
+        <div className="flex items-center gap-1 rounded-lg bg-subtle p-0.5">
           <button
             onClick={() => setLayout("row")}
-            className={cn("rounded-md p-1.5", layout === "row" ? "bg-white shadow-sm" : "text-zinc-400")}
+            className={cn("rounded-md p-1.5", layout === "row" ? "bg-surface shadow-sm" : "text-faint")}
             aria-label="Vue liste"
           >
             <List className="size-4" />
           </button>
           <button
             onClick={() => setLayout("grid")}
-            className={cn("rounded-md p-1.5", layout === "grid" ? "bg-white shadow-sm" : "text-zinc-400")}
+            className={cn("rounded-md p-1.5", layout === "grid" ? "bg-surface shadow-sm" : "text-faint")}
             aria-label="Vue grille"
           >
             <LayoutGrid className="size-4" />
@@ -271,7 +271,7 @@ function Chip({
       onClick={onClick}
       className={cn(
         "shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition",
-        active ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200",
+        active ? "bg-brand text-white" : "bg-subtle text-muted hover:bg-subtle-strong",
       )}
     >
       {children}

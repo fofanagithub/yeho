@@ -122,7 +122,7 @@ export default function Publish() {
     }
   }
 
-  if (loading) return <Spinner className="min-h-screen" />;
+  if (loading) return <Spinner className="min-h-dvh" />;
 
   return (
     <div className="flex flex-col">
@@ -149,7 +149,7 @@ export default function Publish() {
               </button>
             </div>
           ) : (
-            <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 text-zinc-400 hover:border-brand/40">
+            <label className="flex h-44 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-line bg-subtle-soft text-faint hover:border-brand/40">
               {uploading ? (
                 <span className="text-sm">Envoi en cours…</span>
               ) : (
@@ -166,7 +166,7 @@ export default function Publish() {
 
         <Field label="Ou coller une adresse d'image">
           <div className="flex items-center gap-2">
-            <Camera className="size-4 shrink-0 text-zinc-400" />
+            <Camera className="size-4 shrink-0 text-faint" />
             <Input
               value={form.image_url}
               onChange={(e) => set("image_url", e.target.value)}
@@ -244,11 +244,11 @@ export default function Publish() {
         />
 
         {/* Prix dégressifs */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 p-4">
+        <div className="flex flex-col gap-3 rounded-2xl border border-line p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="font-semibold text-sm">Prix dégressifs</p>
-              <p className="text-xs text-zinc-500">Facultatif — récompensez les grosses commandes</p>
+              <p className="text-xs text-muted">Facultatif — récompensez les grosses commandes</p>
             </div>
             <Button
               type="button"
@@ -285,7 +285,7 @@ export default function Publish() {
               <button
                 type="button"
                 onClick={() => setTiers((list) => list.filter((_, j) => j !== i))}
-                className="mb-1 size-10 rounded-xl text-rose-500 hover:bg-rose-50 flex items-center justify-center"
+                className="mb-1 size-10 rounded-xl text-rose-500 hover:bg-rose-500/10 flex items-center justify-center"
                 aria-label="Supprimer le palier"
               >
                 <Trash2 className="size-4" />

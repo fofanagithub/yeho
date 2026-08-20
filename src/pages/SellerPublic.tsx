@@ -67,7 +67,7 @@ export default function SellerPublic() {
   if (loading) {
     return (
       <PhoneShell padBottom={false}>
-        <Spinner className="min-h-screen" />
+        <Spinner className="min-h-dvh" />
       </PhoneShell>
     );
   }
@@ -75,7 +75,7 @@ export default function SellerPublic() {
     return (
       <PhoneShell padBottom={false}>
         <TopBar title="Vendeur" />
-        <p className="p-8 text-center text-sm text-zinc-500">Ce vendeur n'existe pas.</p>
+        <p className="p-8 text-center text-sm text-muted">Ce vendeur n'existe pas.</p>
       </PhoneShell>
     );
   }
@@ -94,7 +94,7 @@ export default function SellerPublic() {
               {seller.company || seller.name}
               {seller.verified ? <BadgeCheck className="size-4 text-brand" /> : null}
             </h1>
-            <p className="text-sm text-zinc-500">{seller.name}</p>
+            <p className="text-sm text-muted">{seller.name}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {role ? (
                 <Badge variant="muted">
@@ -122,10 +122,10 @@ export default function SellerPublic() {
         </div>
 
         {seller.description ? (
-          <p className="text-sm leading-relaxed text-zinc-600">{seller.description}</p>
+          <p className="text-sm leading-relaxed text-muted">{seller.description}</p>
         ) : null}
 
-        <div className="rounded-2xl bg-zinc-50 p-4 text-xs text-zinc-500 flex flex-col gap-1">
+        <div className="rounded-2xl bg-subtle-soft p-4 text-xs text-muted flex flex-col gap-1">
           {seller.address ? <span>📍 {seller.address}</span> : null}
           <span>Membre depuis {formatDate(seller.created_at)}</span>
         </div>
@@ -160,22 +160,22 @@ export default function SellerPublic() {
           <div className="flex flex-col gap-3">
             <h2 className="font-bold text-base">Avis des acheteurs</h2>
             {reviews.map((r) => (
-              <div key={r.id} className="rounded-2xl border border-zinc-200 p-4">
+              <div key={r.id} className="rounded-2xl border border-line p-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold">{r.author_name}</span>
-                  <span className="text-xs text-zinc-400">{timeAgo(r.created_at)}</span>
+                  <span className="text-xs text-faint">{timeAgo(r.created_at)}</span>
                 </div>
                 <div className="mt-1 flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((n) => (
                     <Star
                       key={n}
                       className={
-                        n <= r.rating ? "size-3.5 fill-amber-500 text-amber-500" : "size-3.5 text-zinc-200"
+                        n <= r.rating ? "size-3.5 fill-amber-500 text-amber-500" : "size-3.5 text-subtle-strong"
                       }
                     />
                   ))}
                 </div>
-                {r.comment ? <p className="mt-1.5 text-sm text-zinc-600">{r.comment}</p> : null}
+                {r.comment ? <p className="mt-1.5 text-sm text-muted">{r.comment}</p> : null}
               </div>
             ))}
           </div>
@@ -187,9 +187,9 @@ export default function SellerPublic() {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 p-3 text-center">
+    <div className="rounded-2xl border border-line p-3 text-center">
       <p className="font-extrabold text-brand text-lg leading-6">{value}</p>
-      <p className="text-[11px] text-zinc-500">{label}</p>
+      <p className="text-[11px] text-muted">{label}</p>
     </div>
   );
 }

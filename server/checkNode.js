@@ -18,7 +18,7 @@ function checkNodeVersion() {
     console.error(
       [
         "",
-        `  Node ${process.versions.node} est trop ancien pour SooniGN.`,
+        `  Node ${process.versions.node} est trop ancien pour Yehoo.`,
         `  Le projet utilise le module SQLite integre a Node, disponible a partir de Node ${MINIMUM.join(".")}.`,
         "",
         "  Installez Node 22 LTS ou Node 24 depuis https://nodejs.org, puis relancez.",

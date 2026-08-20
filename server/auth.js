@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import db from "./db.js";
 
-export const JWT_SECRET = process.env.JWT_SECRET || "sooni-gn-dev-secret-change-me";
+export const JWT_SECRET = process.env.JWT_SECRET || "yehoo-dev-secret-change-me";
 const EXPIRES_IN = "30d";
 
 export function signToken(user) {

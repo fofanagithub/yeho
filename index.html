@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#00c950" />
     <meta
       name="description"
-      content="SooniGN — la marketplace qui connecte importateurs, agriculteurs et industriels aux détaillants de Guinée."
+      content="Yehoo — la marketplace qui connecte importateurs, agriculteurs et industriels aux détaillants de Guinée."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,9 +14,27 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <title>SooniGN — Gros & détail en Guinée</title>
+    <title>Yehoo — Gros & détail en Guinée</title>
   </head>
   <body>
+    <script>
+      // Applique le theme avant le premier rendu : sans cela, l'ecran clignote
+      // en blanc une fraction de seconde avant de passer en sombre.
+      (function () {
+        try {
+          var choix = localStorage.getItem("yehoo.theme") || "auto";
+          var sombre =
+            choix === "sombre" ||
+            (choix === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (sombre) {
+            document.documentElement.classList.add("dark");
+            document.querySelector('meta[name="theme-color"]').setAttribute("content", "#09090b");
+          }
+        } catch (e) {
+          /* stockage indisponible : on reste en clair */
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

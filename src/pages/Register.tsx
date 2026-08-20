@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, PhoneInput, Select, Textarea } from "@/components/ui/form";
 import { ErrorNote } from "@/components/ui/feedback";
 import { CATEGORIES, PREFECTURES, REGIONS, ROLE_MAP } from "@/lib/constants";
+import { api } from "@/lib/api";
 import type { Role } from "@/lib/types";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
@@ -99,6 +100,8 @@ export default function Register() {
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [accepted, setAccepted] = useState(false);
 
@@ -123,7 +126,7 @@ export default function Register() {
     return (
       <PhoneShell padBottom={false}>
         <TopBar title="Profil inconnu" onBack={() => navigate("/inscription")} />
-        <div className="p-7 text-sm text-zinc-500">
+        <div className="p-7 text-sm text-muted">
           Ce profil n'existe pas.{" "}
           <Link to="/inscription" className="font-semibold text-brand">
             Revenir au choix du profil
@@ -140,6 +143,29 @@ export default function Register() {
     return "";
   }
 
+  /**
+   * Interroge le serveur des la fin de l'etape 1 : inutile de faire remplir
+   * tout le formulaire pour apprendre ensuite que le numero est deja pris.
+   */
+  async function verifierNumero() {
+    setPhoneError("");
+    try {
+      const { valid, available } = await api.checkPhone(form.phone);
+      if (!valid) {
+        setPhoneError("Numéro incomplet : 9 chiffres après le +224");
+        return false;
+      }
+      if (!available) {
+        setPhoneError("Ce numéro a déjà un compte");
+        return false;
+      }
+      return true;
+    } catch {
+      // Serveur injoignable : on laisse passer, l'inscription tranchera.
+      return true;
+    }
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -147,6 +173,12 @@ export default function Register() {
     if (step === 0) {
       const msg = validateStep0();
       if (msg) return setError(msg);
+
+      setCheckingPhone(true);
+      const numeroLibre = await verifierNumero();
+      setCheckingPhone(false);
+      if (!numeroLibre) return;
+
       setStep(1);
       window.scrollTo({ top: 0 });
       return;
@@ -175,11 +207,18 @@ export default function Register() {
         email: form.email || null,
         meta,
       });
-      toast(`Compte ${roleInfo.label.toLowerCase()} créé. Bienvenue ${user.name.split(" ")[0]} !`);
-      navigate(isSeller ? "/espace-vendeur" : "/accueil", { replace: true });
+      // Le compte est cree ET la session ouverte : on entre directement dans
+      // l'application, sans passer par l'ecran de connexion.
+      toast(`Bienvenue ${user.name.split(" ")[0]} ! Votre compte ${roleInfo.label.toLowerCase()} est prêt.`);
+      navigate("/accueil", { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Inscription impossible");
-      setStep(0);
+      const message = err instanceof Error ? err.message : "Inscription impossible";
+      setError(message);
+      // Numero deja pris : on renvoie a l'etape 1, sur le champ concerne.
+      if (message.toLowerCase().includes("numero") || message.toLowerCase().includes("numéro")) {
+        setPhoneError("Ce numéro a déjà un compte");
+        setStep(0);
+      }
     } finally {
       setLoading(false);
     }
@@ -191,7 +230,7 @@ export default function Register() {
         back
         onBack={() => (step === 0 ? navigate("/inscription") : setStep(0))}
         right={
-          <span className="text-xs font-medium text-zinc-500">
+          <span className="text-xs font-medium text-muted">
             Étape {step + 1} sur 2
           </span>
         }
@@ -205,16 +244,16 @@ export default function Register() {
             </div>
             <div>
               <h1 className="font-bold text-xl leading-6">Créer votre profil {roleInfo.label}</h1>
-              <p className="text-xs text-zinc-500">{roleInfo.tagline}</p>
+              <p className="text-xs text-muted">{roleInfo.tagline}</p>
             </div>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between text-xs text-zinc-500">
+            <div className="flex items-center justify-between text-xs text-muted">
               <span>Progression</span>
               <span>{step === 0 ? "50 %" : "100 %"}</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-zinc-100">
+            <div className="h-1.5 w-full rounded-full bg-subtle">
               <div
                 className={cn("h-full rounded-full bg-brand transition-all", step === 0 ? "w-1/2" : "w-full")}
               />
@@ -235,9 +274,32 @@ export default function Register() {
               />
             </Field>
 
-            <Field label="Numéro de téléphone" required hint="Il servira d'identifiant de connexion">
-              <PhoneInput value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+            <Field
+              label="Numéro de téléphone"
+              required
+              error={phoneError}
+              hint="Il servira d'identifiant de connexion. Un numéro = un seul compte."
+            >
+              <PhoneInput
+                value={form.phone}
+                onChange={(e) => {
+                  set("phone", e.target.value);
+                  if (phoneError) setPhoneError("");
+                }}
+                onBlur={() => form.phone.trim() && verifierNumero()}
+                className={phoneError ? "border-rose-400 focus:border-rose-500 focus:ring-rose-200" : undefined}
+              />
             </Field>
+
+            {phoneError === "Ce numéro a déjà un compte" ? (
+              <Link
+                to="/connexion"
+                state={{ phone: form.phone }}
+                className="-mt-2 text-sm font-semibold text-brand"
+              >
+                Se connecter avec ce numéro
+              </Link>
+            ) : null}
 
             <Field label="Mot de passe" required hint="6 caractères minimum">
               <div className="relative">
@@ -252,7 +314,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPwd((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-faint"
                 >
                   {showPwd ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                 </button>
@@ -386,14 +448,14 @@ export default function Register() {
               onChange={(e) => setAccepted(e.target.checked)}
               label={
                 <>
-                  J'accepte les conditions d'utilisation et la politique de confidentialité de SooniGN.
+                  J'accepte les conditions d'utilisation et la politique de confidentialité de Yehoo.
                 </>
               }
             />
           </div>
         )}
 
-        <Button type="submit" size="lg" loading={loading} className="w-full">
+        <Button type="submit" size="lg" loading={loading || checkingPhone} className="w-full">
           {step === 0 ? (
             <>
               Continuer
@@ -408,7 +470,7 @@ export default function Register() {
         </Button>
 
         {step === 0 ? (
-          <p className="text-center text-sm text-zinc-500">
+          <p className="text-center text-sm text-muted">
             Déjà inscrit ?{" "}
             <Link to="/connexion" className="font-semibold text-brand">
               Se connecter

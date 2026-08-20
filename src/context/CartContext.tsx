@@ -9,7 +9,7 @@ import {
 } from "react";
 import type { CartLine, Product } from "@/lib/types";
 
-const STORAGE_KEY = "sooni.cart";
+const STORAGE_KEY = "yehoo.cart";
 
 interface CartValue {
   lines: CartLine[];

@@ -15,7 +15,8 @@ export default function Login() {
   const { login } = useAuth();
   const toast = useToast();
 
-  const [phone, setPhone] = useState("");
+  // Numero pre-rempli quand on arrive depuis l'inscription (numero deja pris).
+  const [phone, setPhone] = useState((location.state as { phone?: string } | null)?.phone || "");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState("");
@@ -52,7 +53,7 @@ export default function Login() {
             <Sprout className="size-6" />
           </div>
           <h1 className="font-bold text-2xl tracking-tight">Bon retour</h1>
-          <p className="text-sm leading-relaxed text-zinc-500">
+          <p className="text-sm leading-relaxed text-muted">
             Connectez-vous avec le numéro utilisé lors de votre inscription.
           </p>
         </div>
@@ -76,7 +77,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShow((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-faint"
               aria-label={show ? "Masquer" : "Afficher"}
             >
               {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
@@ -92,12 +93,12 @@ export default function Login() {
         <button
           type="button"
           onClick={fillDemo}
-          className="rounded-xl border border-dashed border-zinc-300 px-4 py-3 text-xs text-zinc-500 hover:border-brand hover:text-brand transition"
+          className="rounded-xl border border-dashed border-line px-4 py-3 text-xs text-muted hover:border-brand hover:text-brand transition"
         >
           Utiliser le compte de démonstration (620 00 00 07 / motdepasse)
         </button>
 
-        <p className="text-center text-sm text-zinc-500">
+        <p className="text-center text-sm text-muted">
           Pas encore de compte ?{" "}
           <Link to="/inscription" className="font-semibold text-brand">
             Créer un compte

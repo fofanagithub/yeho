@@ -8,7 +8,7 @@ import type {
   User,
 } from "./types";
 
-const TOKEN_KEY = "sooni.token";
+const TOKEN_KEY = "yehoo.token";
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -63,6 +63,11 @@ export const api = {
       body: JSON.stringify({ phone, password }),
     }),
   me: () => request<{ user: User }>("/auth/me"),
+  /** Verifie qu'un numero est bien forme et encore libre, avant de valider l'inscription. */
+  checkPhone: (phone: string) =>
+    request<{ phone: string; valid: boolean; available: boolean }>(
+      `/auth/check-phone${qs({ phone })}`,
+    ),
   updateMe: (payload: Record<string, unknown>) =>
     request<{ user: User }>("/auth/me", { method: "PATCH", body: JSON.stringify(payload) }),
 

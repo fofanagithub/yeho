@@ -29,7 +29,7 @@ export default function App() {
   const { user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <Spinner className="min-h-screen" />;
+  if (loading) return <Spinner className="min-h-dvh" />;
 
   return (
     <Routes>

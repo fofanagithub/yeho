@@ -95,7 +95,7 @@ export default function Dashboard() {
 
         {/* Évolution mensuelle */}
         {stats?.monthly?.length ? (
-          <section className="rounded-2xl border border-zinc-200 p-4">
+          <section className="rounded-2xl border border-line p-4">
             <div className="mb-4 flex items-center gap-2">
               <TrendingUp className="size-4 text-brand" />
               <h2 className="font-semibold text-sm">Ventes des derniers mois</h2>
@@ -103,12 +103,12 @@ export default function Dashboard() {
             <div className="flex items-end justify-between gap-2 h-28">
               {[...stats.monthly].reverse().map((m) => (
                 <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
-                  <span className="text-[10px] text-zinc-500">{formatGNF(m.revenue, { short: true })}</span>
+                  <span className="text-[10px] text-muted">{formatGNF(m.revenue, { short: true })}</span>
                   <div
                     className="w-full rounded-t-md bg-brand/80"
                     style={{ height: `${Math.max(4, (m.revenue / maxRevenue) * 72)}px` }}
                   />
-                  <span className="text-[10px] text-zinc-400">{m.month.slice(5)}</span>
+                  <span className="text-[10px] text-faint">{m.month.slice(5)}</span>
                 </div>
               ))}
             </div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
             </Link>
           </div>
           {pending.length === 0 ? (
-            <p className="rounded-2xl bg-zinc-50 p-4 text-sm text-zinc-500">
+            <p className="rounded-2xl bg-subtle-soft p-4 text-sm text-muted">
               Aucune commande en attente. Publiez de nouvelles annonces pour attirer des acheteurs.
             </p>
           ) : (
@@ -132,11 +132,11 @@ export default function Dashboard() {
               <Link
                 key={order.id}
                 to={`/commande/${order.id}`}
-                className="flex items-center gap-3 rounded-2xl border border-zinc-200 p-3.5 hover:border-brand/40"
+                className="flex items-center gap-3 rounded-2xl border border-line p-3.5 hover:border-brand/40"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] text-zinc-400">{order.reference}</span>
+                    <span className="font-mono text-[11px] text-faint">{order.reference}</span>
                     <span
                       className={cn(
                         "rounded-full px-2 py-0.5 text-[10px] font-semibold",
@@ -147,7 +147,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <p className="truncate text-sm font-semibold">{order.buyer?.company || order.buyer?.name}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted">
                     {order.items.length} article{order.items.length > 1 ? "s" : ""} · {timeAgo(order.created_at)}
                   </p>
                 </div>
@@ -165,9 +165,9 @@ export default function Dashboard() {
             <MessageCircle className="size-5 text-brand" />
             <span className="flex-1 text-sm">
               <span className="font-semibold">{stats.unread} message non lu{stats.unread > 1 ? "s" : ""}</span>
-              <span className="block text-xs text-zinc-500">Répondez vite pour ne pas perdre la vente</span>
+              <span className="block text-xs text-muted">Répondez vite pour ne pas perdre la vente</span>
             </span>
-            <ChevronRight className="size-4 text-zinc-400" />
+            <ChevronRight className="size-4 text-faint" />
           </Link>
         ) : null}
       </div>
@@ -192,17 +192,17 @@ function KpiCard({
     <div
       className={cn(
         "rounded-2xl border p-4",
-        accent ? "border-brand/20 bg-brand/5" : "border-zinc-200 bg-white",
+        accent ? "border-brand/20 bg-brand/5" : "border-line bg-surface",
       )}
     >
-      <div className="flex items-center gap-1.5 text-zinc-500">
+      <div className="flex items-center gap-1.5 text-muted">
         {icon}
         <span className="text-[11px]">{label}</span>
       </div>
-      <p className={cn("mt-1 font-extrabold text-lg leading-6", accent ? "text-brand" : "text-zinc-900")}>
+      <p className={cn("mt-1 font-extrabold text-lg leading-6", accent ? "text-brand" : "text-fg")}>
         {value}
       </p>
-      {hint ? <p className="text-[11px] text-zinc-400">{hint}</p> : null}
+      {hint ? <p className="text-[11px] text-faint">{hint}</p> : null}
     </div>
   );
 }

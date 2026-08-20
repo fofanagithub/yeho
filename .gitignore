@@ -5,3 +5,12 @@ server/uploads
 *.local
 .env
 .DS_Store
+
+# Videos : GitHub refuse tout fichier de plus de 100 Mo.
+# Pour en versionner une malgre tout, passez par Git LFS.
+*.mp4
+*.mov
+
+# Residus laisses par les editions faites depuis le dossier partage.
+# Suppression sans risque : del /s /q .fuse_hidden*
+.fuse_hidden*

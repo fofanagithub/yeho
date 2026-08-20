@@ -73,7 +73,7 @@ export default function Home() {
   return (
     <div className="flex flex-col">
       {/* En-tête */}
-      <header className="rounded-b-3xl bg-linear-to-b from-emerald-700 to-brand px-5 pb-6 pt-5 text-white">
+      <header className="rounded-b-3xl bg-linear-to-b from-emerald-700 to-brand px-5 pb-6 pt-[calc(1.25rem+var(--safe-top))] text-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="size-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -83,7 +83,7 @@ export default function Home() {
               <p className="text-xs text-white/80">
                 {user ? `Bonjour ${user.name.split(" ")[0]}` : "Bienvenue sur"}
               </p>
-              <p className="font-bold">SooniGN</p>
+              <p className="font-bold">Yehoo</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -120,7 +120,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => navigate("/recherche")}
-          className="mt-4 flex w-full items-center gap-2 rounded-xl bg-white px-4 py-3 text-left text-sm text-zinc-400 shadow-sm"
+          className="mt-4 flex w-full items-center gap-2 rounded-xl bg-surface px-4 py-3 text-left text-sm text-faint shadow-sm"
         >
           <Search className="size-4" />
           Riz, ciment, ananas, jus…
@@ -146,7 +146,7 @@ export default function Home() {
                 <c.icon className="size-6" />
               </span>
               <span className="text-[11px] font-medium text-center leading-tight">{c.label}</span>
-              <span className="-mt-1 text-[10px] text-zinc-400">{counts[c.value] || 0}</span>
+              <span className="-mt-1 text-[10px] text-faint">{counts[c.value] || 0}</span>
             </Link>
           ))}
         </div>
@@ -164,9 +164,9 @@ export default function Home() {
             </span>
             <span className="flex-1">
               <span className="block font-semibold text-sm">Mon espace vendeur</span>
-              <span className="block text-xs text-zinc-500">Annonces, commandes reçues et statistiques</span>
+              <span className="block text-xs text-muted">Annonces, commandes reçues et statistiques</span>
             </span>
-            <ChevronRight className="size-4 text-zinc-400" />
+            <ChevronRight className="size-4 text-faint" />
           </Link>
         </section>
       ) : null}
@@ -186,7 +186,7 @@ export default function Home() {
             ))}
           </div>
         ) : (
-          <div className="flex gap-3 overflow-x-auto px-5 pb-2">
+          <div className="scroll-x flex gap-3 px-5 pb-2">
             {featured.map((p) => (
               <div key={p.id} className="w-44 shrink-0">
                 <ProductCard product={p} onToggleFavorite={toggleFavorite} />
@@ -200,7 +200,7 @@ export default function Home() {
       {nearby.length ? (
         <section className="px-5 pt-6">
           <h2 className="mb-3 font-bold text-base">
-            Près de chez vous <span className="font-normal text-zinc-400 text-sm">· {user?.region}</span>
+            Près de chez vous <span className="font-normal text-faint text-sm">· {user?.region}</span>
           </h2>
           <div className="flex flex-col gap-3">
             {nearby.map((p) => (

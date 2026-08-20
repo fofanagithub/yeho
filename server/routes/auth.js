@@ -17,6 +17,28 @@ function normalizePhone(raw) {
   return p;
 }
 
+/** Un mobile guineen : indicatif 224 puis 9 chiffres. */
+function isValidPhone(normalized) {
+  return /^\+224\d{9}$/.test(normalized);
+}
+
+function phoneTaken(normalized) {
+  return !!db.prepare("SELECT id FROM users WHERE phone = ?").get(normalized);
+}
+
+/**
+ * GET /api/auth/check-phone?phone=620000007
+ * Permet au formulaire d'inscription de signaler un doublon des la saisie,
+ * sans attendre que tout le formulaire soit rempli.
+ */
+router.get("/check-phone", (req, res) => {
+  const normalized = normalizePhone(req.query.phone);
+  if (!isValidPhone(normalized)) {
+    return res.json({ phone: normalized, valid: false, available: false });
+  }
+  res.json({ phone: normalized, valid: true, available: !phoneTaken(normalized) });
+});
+
 router.post("/register", (req, res) => {
   const {
     phone,
@@ -42,34 +64,53 @@ router.post("/register", (req, res) => {
   }
 
   const normalized = normalizePhone(phone);
-  const exists = db.prepare("SELECT id FROM users WHERE phone = ?").get(normalized);
-  if (exists) return res.status(409).json({ error: "Ce numero a deja un compte" });
+  if (!isValidPhone(normalized)) {
+    return res.status(400).json({ error: "Numero de telephone invalide : 9 chiffres apres le +224" });
+  }
+  // Verrou applicatif ; la colonne users.phone porte aussi une contrainte UNIQUE,
+  // ce qui bloque tout doublon meme en cas d'inscriptions simultanees.
+  if (phoneTaken(normalized)) {
+    return res.status(409).json({ error: "Ce numero a deja un compte" });
+  }
 
   const hash = bcrypt.hashSync(String(password), 10);
-  const info = db
-    .prepare(
-      `INSERT INTO users (phone, password_hash, name, role, company, category, region,
-                          prefecture, address, description, email, avatar_url, meta)
-       VALUES (@phone, @hash, @name, @role, @company, @category, @region,
-               @prefecture, @address, @description, @email, @avatar, @meta)`,
-    )
-    .run({
-      phone: normalized,
-      hash,
-      name,
-      role,
-      company: company || null,
-      category: category || null,
-      region: region || null,
-      prefecture: prefecture || null,
-      address: address || null,
-      description: description || null,
-      email: email || null,
-      avatar: null,
-      meta: meta ? JSON.stringify(meta) : null,
-    });
+
+  let info;
+  try {
+    info = db
+      .prepare(
+        `INSERT INTO users (phone, password_hash, name, role, company, category, region,
+                            prefecture, address, description, email, avatar_url, meta)
+         VALUES (@phone, @hash, @name, @role, @company, @category, @region,
+                 @prefecture, @address, @description, @email, @avatar, @meta)`,
+      )
+      .run({
+        phone: normalized,
+        hash,
+        name,
+        role,
+        company: company || null,
+        category: category || null,
+        region: region || null,
+        prefecture: prefecture || null,
+        address: address || null,
+        description: description || null,
+        email: email || null,
+        avatar: null,
+        meta: meta ? JSON.stringify(meta) : null,
+      });
+  } catch (error) {
+    // Deux inscriptions simultanees avec le meme numero : la contrainte UNIQUE
+    // tranche, et on renvoie le meme message que la verification applicative.
+    if (String(error?.message || "").includes("UNIQUE")) {
+      return res.status(409).json({ error: "Ce numero a deja un compte" });
+    }
+    throw error;
+  }
 
   const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
+  // Le jeton est renvoye immediatement : l'utilisateur entre dans l'application
+  // sans avoir a se reconnecter apres l'inscription.
   res.status(201).json({ token: signToken(user), user: publicUser(user) });
 });
 

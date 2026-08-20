@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { BadgeCheck, Heart, MapPin, Package } from "lucide-react";
 import { cn, formatGNF } from "@/lib/utils";
+import { imageSrcSet, imageUrl, TAILLES } from "@/lib/image";
 import type { Product } from "@/lib/types";
 import { CATEGORY_MAP } from "@/lib/constants";
 
@@ -19,9 +20,9 @@ export function ProductCard({
     return (
       <Link
         to={`/produit/${product.id}`}
-        className="flex gap-3 rounded-2xl border border-zinc-200 bg-white p-3 active:scale-[0.99] transition"
+        className="flex gap-3 rounded-2xl border border-line bg-surface p-3 active:scale-[0.99] transition"
       >
-        <Thumb product={product} className="size-24 rounded-xl" />
+        <Thumb product={product} width={TAILLES.vignetteListe} className="size-24 rounded-xl" />
         <div className="flex-1 min-w-0 flex flex-col gap-1">
           <div className="flex items-start gap-2">
             <h3 className="flex-1 font-semibold text-sm leading-5 line-clamp-2">{product.title}</h3>
@@ -29,9 +30,9 @@ export function ProductCard({
           </div>
           <p className="font-bold text-brand text-base leading-6">
             {formatGNF(product.price)}
-            <span className="font-normal text-zinc-500 text-xs"> / {product.unit}</span>
+            <span className="font-normal text-muted text-xs"> / {product.unit}</span>
           </p>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
             <span className="inline-flex items-center gap-1">
               <Package className="size-3" />
               min. {product.min_order}
@@ -52,10 +53,17 @@ export function ProductCard({
   return (
     <Link
       to={`/produit/${product.id}`}
-      className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white active:scale-[0.99] transition"
+      className="flex flex-col overflow-hidden rounded-2xl border border-line bg-surface active:scale-[0.99] transition"
     >
       <div className="relative">
-        <Thumb product={product} className="h-32 w-full" rounded={false} />
+        {/* aspect-[4/3] : la hauteur suit la largeur de la carte, donc la meme
+            proportion sur un petit Android comme sur un grand ecran. */}
+        <Thumb
+          product={product}
+          width={TAILLES.carteGrille}
+          className="aspect-[4/3] w-full"
+          rounded={false}
+        />
         {category ? (
           <span
             className={cn(
@@ -76,7 +84,7 @@ export function ProductCard({
         <h3 className="font-semibold text-sm leading-5 line-clamp-2 min-h-10">{product.title}</h3>
         <p className="font-bold text-brand text-sm leading-5">
           {formatGNF(product.price)}
-          <span className="font-normal text-zinc-500 text-[11px]"> / {product.unit}</span>
+          <span className="font-normal text-muted text-[11px]"> / {product.unit}</span>
         </p>
         <SellerLine product={product} />
       </div>
@@ -86,10 +94,12 @@ export function ProductCard({
 
 function Thumb({
   product,
+  width,
   className,
   rounded = true,
 }: {
   product: Product;
+  width: number;
   className?: string;
   rounded?: boolean;
 }) {
@@ -97,7 +107,7 @@ function Thumb({
     return (
       <div
         className={cn(
-          "bg-zinc-100 text-zinc-300 flex items-center justify-center shrink-0",
+          "bg-subtle text-faint flex items-center justify-center shrink-0",
           rounded && "rounded-xl",
           className,
         )}
@@ -108,17 +118,19 @@ function Thumb({
   }
   return (
     <img
-      src={product.image_url}
+      src={imageUrl(product.image_url, width)}
+      srcSet={imageSrcSet(product.image_url, width)}
       alt={product.title}
       loading="lazy"
-      className={cn("object-cover shrink-0 bg-zinc-100", rounded && "rounded-xl", className)}
+      decoding="async"
+      className={cn("object-cover shrink-0 bg-subtle", rounded && "rounded-xl", className)}
     />
   );
 }
 
 function SellerLine({ product }: { product: Product }) {
   return (
-    <div className="flex items-center gap-1 text-[11px] text-zinc-500 truncate">
+    <div className="flex items-center gap-1 text-[11px] text-muted truncate">
       <span className="truncate">{product.seller_company || product.seller_name}</span>
       {product.seller_verified ? <BadgeCheck className="size-3 shrink-0 text-brand" /> : null}
     </div>
@@ -149,7 +161,7 @@ function FavButton({
       aria-label="Ajouter aux favoris"
     >
       <Heart
-        className={cn("size-4", product.is_favorite ? "fill-rose-500 text-rose-500" : "text-zinc-400")}
+        className={cn("size-4", product.is_favorite ? "fill-rose-500 text-rose-500" : "text-faint")}
       />
     </button>
   );

@@ -43,7 +43,7 @@ export default function Messages() {
 
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white px-5 pb-3 pt-5">
+      <header className="sticky top-0 z-40 border-b border-line bg-surface px-5 pb-3 pt-[calc(1.25rem+var(--safe-top))]">
         <div className="flex items-center justify-between">
           <h1 className="font-bold text-2xl">Messages</h1>
           {totalUnread > 0 ? (
@@ -53,7 +53,7 @@ export default function Messages() {
           ) : null}
         </div>
         <div className="relative mt-3">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-faint" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -83,10 +83,10 @@ export default function Messages() {
           }
         />
       ) : (
-        <ul className="divide-y divide-zinc-100">
+        <ul className="divide-y divide-line-soft">
           {filtered.map((c) => (
             <li key={c.id}>
-              <Link to={`/messages/${c.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-zinc-50">
+              <Link to={`/messages/${c.id}`} className="flex items-center gap-3 px-5 py-3.5 hover:bg-subtle-soft">
                 <Avatar
                   name={c.partner.company || c.partner.name}
                   src={c.partner.avatar_url}
@@ -98,7 +98,7 @@ export default function Messages() {
                     <p className={cn("flex-1 truncate text-sm", c.unread ? "font-bold" : "font-semibold")}>
                       {c.partner.company || c.partner.name}
                     </p>
-                    <span className="shrink-0 text-[11px] text-zinc-400">
+                    <span className="shrink-0 text-[11px] text-faint">
                       {timeAgo(c.last_message?.created_at || c.created_at)}
                     </span>
                   </div>
@@ -108,7 +108,7 @@ export default function Messages() {
                   <p
                     className={cn(
                       "truncate text-xs",
-                      c.unread ? "font-medium text-zinc-800" : "text-zinc-500",
+                      c.unread ? "font-medium text-fg-soft" : "text-muted",
                     )}
                   >
                     {c.last_message?.body || "Nouvelle conversation"}
