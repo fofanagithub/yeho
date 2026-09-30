@@ -57,7 +57,7 @@ export default function Login() {
           <ErrorNote>{error}</ErrorNote>
 
           <Field label="Numéro de téléphone" required>
-            <PhoneInput value={phone} onChangeText={setPhone} autoComplete="tel" />
+            <PhoneInput value={phone} onChangeText={setPhone} autoComplete="tel" returnKeyType="next" />
           </Field>
 
           <Field label="Mot de passe" required>
@@ -68,6 +68,8 @@ export default function Login() {
                 onChangeText={setPassword}
                 placeholder="••••••••"
                 autoComplete="current-password"
+                returnKeyType="go"
+                onSubmitEditing={submit}
                 className="pr-11"
               />
               <Pressable onPress={() => setShow((s) => !s)} className="absolute right-3" hitSlop={8}>
@@ -81,14 +83,17 @@ export default function Login() {
             <Text className="font-semibold text-white text-base ml-2">Se connecter</Text>
           </Button>
 
-          <Pressable
-            onPress={fillDemo}
-            className="rounded-xl border border-dashed border-line dark:border-line-dark px-4 py-3"
-          >
-            <Text className="text-xs text-muted dark:text-muted-dark text-center">
-              Utiliser le compte de démonstration (620 00 00 07 / motdepasse)
-            </Text>
-          </Pressable>
+          {/* Raccourci de developpement uniquement : jamais dans l'app publiee. */}
+          {__DEV__ ? (
+            <Pressable
+              onPress={fillDemo}
+              className="rounded-xl border border-dashed border-line dark:border-line-dark px-4 py-3"
+            >
+              <Text className="text-xs text-muted dark:text-muted-dark text-center">
+                Utiliser le compte de démonstration (620 00 00 07 / motdepasse)
+              </Text>
+            </Pressable>
+          ) : null}
 
           <Text className="text-center text-sm text-muted dark:text-muted-dark">
             Pas encore de compte ?{" "}

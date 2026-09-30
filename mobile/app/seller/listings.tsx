@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { router } from "expo-router";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Eye, PackagePlus, Pause, Pencil, Play, Trash2 } from "lucide-react-native";
 import { api } from "@/lib/api";
+import { useIconColor } from "@/lib/useIconColor";
+import { confirmAction } from "@/lib/confirm";
 import type { Product } from "@/lib/types";
 import { TopBar } from "@/components/layout/TopBar";
 import { RequireAuth } from "@/components/layout/RequireAuth";
@@ -12,7 +14,7 @@ import { Badge, EmptyState, Skeleton } from "@/components/ui/feedback";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { imageUrl } from "@/lib/image";
-import { cn, formatGNF, formatNumber, timeAgo } from "@/lib/utils";
+import { cn, formatGNF, formatNumber, timeAgo, unitLabel } from "@/lib/utils";
 
 export default function ListingsScreen() {
   return (
@@ -25,6 +27,7 @@ export default function ListingsScreen() {
 function Listings() {
   const { user } = useAuth();
   const toast = useToast();
+  const iconColor = useIconColor();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,23 +64,21 @@ function Listings() {
   }
 
   function remove(product: Product) {
-    Alert.alert("Supprimer l'annonce", `Supprimer définitivement « ${product.title} » ?`, [
-      { text: "Annuler", style: "cancel" },
-      {
-        text: "Supprimer",
-        style: "destructive",
-        onPress: async () => {
-          setProducts((list) => list.filter((p) => p.id !== product.id));
-          try {
-            await api.deleteProduct(product.id);
-            toast("Annonce supprimée");
-          } catch {
-            toast("Suppression impossible", "error");
-            load();
-          }
-        },
+    confirmAction({
+      title: "Supprimer l'annonce",
+      message: `Supprimer définitivement « ${product.title} » ?`,
+      confirmLabel: "Supprimer",
+      onConfirm: async () => {
+        setProducts((list) => list.filter((p) => p.id !== product.id));
+        try {
+          await api.deleteProduct(product.id);
+          toast("Annonce supprimée");
+        } catch {
+          toast("Suppression impossible", "error");
+          load();
+        }
       },
-    ]);
+    });
   }
 
   const filtered = products.filter((p) => p.status === filter);
@@ -140,7 +141,7 @@ function Listings() {
                   </Pressable>
                   <Text className="mt-0.5 text-sm font-bold text-brand">
                     {formatGNF(product.price)}
-                    <Text className="text-xs font-normal text-muted dark:text-muted-dark"> / {product.unit}</Text>
+                    <Text className="text-xs font-normal text-muted dark:text-muted-dark"> / {unitLabel(product.unit)}</Text>
                   </Text>
                   <View className="mt-1 flex-row flex-wrap items-center gap-2">
                     <View className="flex-row items-center gap-1">
@@ -150,24 +151,29 @@ function Listings() {
                     <Text className="text-[11px] text-muted dark:text-muted-dark">stock {formatNumber(product.stock)}</Text>
                     <Text className="text-[11px] text-muted dark:text-muted-dark">{timeAgo(product.created_at)}</Text>
                     {product.status === "paused" ? <Badge>En pause</Badge> : null}
+                    {product.hidden_at ? (
+                      <Badge className="bg-rose-100 dark:bg-rose-500/15" textClassName="text-rose-700 dark:text-rose-300">
+                        Masquée après signalements
+                      </Badge>
+                    ) : null}
                   </View>
                 </View>
               </View>
 
               <View className="mt-3 flex-row items-center gap-2 border-t border-line-soft dark:border-line-soft-dark pt-3">
                 <Button variant="ghost" size="sm" className="flex-1" onPress={() => router.push(`/publish/${product.id}`)}>
-                  <Pencil size={14} color="#27272a" />
+                  <Pencil size={14} color={iconColor} />
                   <Text className="text-fg-soft dark:text-fg-soft-dark text-sm ml-1.5">Modifier</Text>
                 </Button>
                 <Button variant="ghost" size="sm" className="flex-1" onPress={() => toggleStatus(product)}>
                   {product.status === "active" ? (
                     <>
-                      <Pause size={14} color="#27272a" />
+                      <Pause size={14} color={iconColor} />
                       <Text className="text-fg-soft dark:text-fg-soft-dark text-sm ml-1.5">Pause</Text>
                     </>
                   ) : (
                     <>
-                      <Play size={14} color="#27272a" />
+                      <Play size={14} color={iconColor} />
                       <Text className="text-fg-soft dark:text-fg-soft-dark text-sm ml-1.5">Réactiver</Text>
                     </>
                   )}

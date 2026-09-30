@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEST_DB = path.join(__dirname, "data", "test.db");
 const PORT = 4100;
 const BASE = `http://localhost:${PORT}`;
-const env = { ...process.env, YEHOO_DB: TEST_DB, PORT: String(PORT) };
+const env = { ...process.env, YEHOO_DB: TEST_DB, PORT: String(PORT), ADMIN_PHONES: "+224620000003" };
 
 let failures = 0;
 const ok = (label, condition, detail = "") => {
@@ -93,14 +93,20 @@ try {
   ok("connexion du vendeur importateur", !!seller);
 
   r = await call("POST", "/api/auth/register", {
-    body: { phone: "620000007", password: "azerty12", name: "X", role: "detaillant" },
+    body: { accept_terms: true, phone: "620000007", password: "azerty12", name: "X", role: "detaillant" },
   });
   ok("numero deja utilise refuse", r.status === 409);
 
   r = await call("POST", "/api/auth/register", {
-    body: { phone: "624 11 22 33", password: "azerty12", name: "Kadiatou Sow", role: "particulier", region: "Kankan" },
+    body: { accept_terms: true, phone: "624 11 22 33", password: "azerty12", name: "Kadiatou Sow", role: "particulier", region: "Kankan" },
   });
   ok("inscription et normalisation du numero", r.status === 201 && r.body.user?.phone === "+224624112233", r.body.user?.phone);
+  const kadiatou = r.body.token;
+  ok("le hash du mot de passe n'est jamais renvoye", r.body.user && !("password_hash" in r.body.user));
+  r = await call("POST", "/api/auth/register", {
+    body: { phone: "625 99 88 77", password: "azerty12", name: "Sans CGU", role: "particulier" },
+  });
+  ok("inscription refusee sans acceptation des CGU", r.status === 400);
 
   r = await call("GET", "/api/auth/me", { token: buyer });
   ok("jeton valide renvoie le profil", r.body.user?.name === "Mamadou Barry");
@@ -119,13 +125,13 @@ try {
   r = await call("GET", "/api/auth/check-phone?phone=6200");
   ok("numero incomplet signale invalide", r.body.valid === false);
   r = await call("POST", "/api/auth/register", {
-    body: { phone: "6200", password: "azerty12", name: "Trop court", role: "particulier" },
+    body: { accept_terms: true, phone: "6200", password: "azerty12", name: "Trop court", role: "particulier" },
   });
   ok("inscription avec numero invalide refusee", r.status === 400);
 
   // L'inscription ouvre la session : le jeton renvoye doit donner acces tout de suite.
   r = await call("POST", "/api/auth/register", {
-    body: { phone: "623 11 22 33", password: "azerty12", name: "Aissatou Diallo", role: "agriculteur", region: "Labé" },
+    body: { accept_terms: true, phone: "623 11 22 33", password: "azerty12", name: "Aissatou Diallo", role: "agriculteur", region: "Labé" },
   });
   const nouveauJeton = r.body.token;
   ok("inscription renvoie un jeton de session", r.status === 201 && !!nouveauJeton);
@@ -225,6 +231,149 @@ try {
   ok("statistiques vendeur", r.body.stats.listings === 4 && r.body.stats.pending >= 1, JSON.stringify(r.body.stats));
   r = await call("GET", "/api/sellers/3");
   ok("boutique publique d'un vendeur", r.body.seller?.company === "Industries Kania SA" && r.body.products.length === 4);
+
+  console.log("\n--- Moderation : signalements ---");
+  r = await call("POST", "/api/auth/login", { body: { phone: "620000003", password: "motdepasse" } });
+  const admin = r.body.token;
+  r = await call("GET", "/api/products?seller=1");
+  const cible = r.body.products[0].id;
+  r = await call("POST", "/api/reports", { token: seller, body: { target_type: "product", target_id: cible, reason: "spam" } });
+  ok("on ne peut pas signaler sa propre annonce", r.status === 400);
+  r = await call("POST", "/api/reports", { token: buyer, body: { target_type: "product", target_id: cible, reason: "inconnu" } });
+  ok("motif de signalement obligatoire", r.status === 400);
+  for (const t of [buyer, kadiatou]) {
+    r = await call("POST", "/api/reports", { token: t, body: { target_type: "product", target_id: cible, reason: "trompeur" } });
+  }
+  ok("signalement enregistre", r.status === 201);
+  r = await call("GET", `/api/products/${cible}`);
+  ok("annonce encore visible sous le seuil", r.status === 200);
+  r = await call("POST", "/api/reports", { token: nouveauJeton, body: { target_type: "product", target_id: cible, reason: "arnaque" } });
+  r = await call("GET", `/api/products/${cible}`);
+  ok("annonce masquee automatiquement apres 3 signalements", r.status === 404);
+  r = await call("GET", `/api/products/${cible}`, { token: seller });
+  ok("le vendeur voit toujours son annonce masquee", r.status === 200);
+  r = await call("GET", "/api/admin/reports", { token: buyer });
+  ok("file de moderation reservee aux moderateurs", r.status === 403);
+  r = await call("GET", "/api/admin/reports", { token: admin });
+  ok("le moderateur voit les signalements", r.body.reports?.length === 3, String(r.body.reports?.length));
+  r = await call("POST", `/api/admin/reports/${r.body.reports[0].id}`, { token: admin, body: { action: "rejeter" } });
+  r = await call("GET", `/api/products/${cible}`);
+  ok("signalement rejete : l'annonce redevient visible", r.status === 200);
+  r = await call("GET", "/api/admin/reports", { token: admin });
+  ok("tous les signalements du contenu sont clos ensemble", r.body.reports.length === 0);
+
+  console.log("\n--- Moderation : blocage ---");
+  r = await call("POST", "/api/conversations", { token: buyer, body: { seller_id: 1, body: "Bonjour" } });
+  const convBloquee = r.body.conversation.id;
+  r = await call("POST", "/api/blocks/1", { token: buyer });
+  ok("blocage d'un utilisateur", r.body.blocked === true);
+  r = await call("GET", "/api/products?seller=1", { token: buyer });
+  ok("les annonces de l'utilisateur bloque disparaissent", r.body.products.length === 0);
+  r = await call("GET", "/api/conversations", { token: buyer });
+  ok("la conversation disparait de la messagerie", !r.body.conversations.some((c) => c.id === convBloquee));
+  r = await call("POST", `/api/conversations/${convBloquee}/messages`, { token: seller, body: { body: "Relance" } });
+  ok("l'utilisateur bloque ne peut plus ecrire", r.status === 403);
+  r = await call("GET", "/api/blocks", { token: buyer });
+  ok("liste des utilisateurs bloques", r.body.users.length === 1 && r.body.users[0].id === 1);
+  r = await call("DELETE", "/api/blocks/1", { token: buyer });
+  r = await call("GET", "/api/products?seller=1", { token: buyer });
+  ok("deblocage : les annonces reviennent", r.body.products.length > 0);
+
+  console.log("\n--- Moderation : suspension ---");
+  r = await call("GET", "/api/auth/me", { token: nouveauJeton });
+  const aissatouId = r.body.user.id;
+  r = await call("POST", "/api/reports", { token: buyer, body: { target_type: "user", target_id: aissatouId, reason: "harcelement" } });
+  r = await call("GET", "/api/admin/reports", { token: admin });
+  const rapport = r.body.reports.find((x) => x.target_type === "user");
+  r = await call("POST", `/api/admin/reports/${rapport.id}`, { token: admin, body: { action: "bannir" } });
+  r = await call("GET", "/api/auth/me", { token: nouveauJeton });
+  ok("compte suspendu : session coupee", r.status === 403);
+  r = await call("POST", "/api/auth/login", { body: { phone: "623112233", password: "azerty12" } });
+  ok("compte suspendu : connexion refusee", r.status === 403);
+
+  console.log("\n--- Suppression de compte ---");
+  r = await call("DELETE", "/api/auth/me", { token: kadiatou, body: { password: "faux" } });
+  ok("mot de passe exige pour supprimer le compte", r.status === 401);
+  r = await call("DELETE", "/api/auth/me", { token: kadiatou, body: { password: "azerty12" } });
+  ok("suppression du compte", r.status === 200);
+  r = await call("GET", "/api/auth/me", { token: kadiatou });
+  ok("l'ancien jeton ne fonctionne plus", r.status === 401);
+  r = await call("POST", "/api/auth/login", { body: { phone: "624112233", password: "azerty12" } });
+  ok("connexion impossible apres suppression", r.status === 401);
+  r = await call("GET", "/api/auth/check-phone?phone=624112233");
+  ok("le numero est libere", r.body.available === true);
+
+  console.log("\n--- Commandes : garde-fous ---");
+  r = await call("GET", "/api/products?seller=1");
+  const p = r.body.products.find((x) => x.stock >= x.min_order * 2);
+  const stockAvant = p.stock;
+  const commande = (token, quantity, extra = {}) =>
+    call("POST", "/api/orders", {
+      token,
+      body: { items: [{ product_id: p.id, quantity }], address: "Madina", payment_method: "especes", ...extra },
+    });
+  r = await commande(buyer, stockAvant + 1);
+  ok("commande au-dela du stock refusee", r.status === 400, r.body.error);
+  r = await commande(seller, p.min_order);
+  ok("un vendeur ne commande pas son propre produit", r.status === 400);
+  r = await commande(buyer, p.min_order, { delivery_fee: -999999999 });
+  ok("frais de livraison fixes cote serveur", r.status === 201 && r.body.orders[0].delivery_fee === 150000);
+  const cmd = r.body.orders[0];
+  r = await call("GET", `/api/products/${p.id}`);
+  ok("le stock diminue a la commande", r.body.product.stock === stockAvant - p.min_order);
+  r = await call("PATCH", `/api/orders/${cmd.id}/status`, { token: seller, body: { status: "livree" } });
+  ok("le vendeur ne saute pas d'etape", r.status === 400);
+  r = await call("PATCH", `/api/orders/${cmd.id}/status`, { token: buyer, body: { status: "livree" } });
+  ok("l'acheteur ne confirme pas une reception avant l'expedition", r.status === 403);
+  r = await call("PATCH", `/api/orders/${cmd.id}/status`, { token: seller, body: { status: "annulee" } });
+  ok("le vendeur peut refuser une commande", r.status === 200 && r.body.order.status === "annulee");
+  r = await call("GET", `/api/products/${p.id}`);
+  ok("l'annulation rend le stock", r.body.product.stock === stockAvant);
+  r = await call("PATCH", `/api/orders/${cmd.id}/status`, { token: seller, body: { status: "confirmee" } });
+  ok("une commande annulee ne repart pas", r.status === 400);
+  r = await call("PATCH", `/api/products/${p.id}`, { token: seller, body: { status: "paused" } });
+  r = await commande(buyer, p.min_order);
+  ok("annonce en pause non commandable", r.status === 400);
+  await call("PATCH", `/api/products/${p.id}`, { token: seller, body: { status: "active" } });
+  r = await call("PATCH", `/api/products/${p.id}`, { token: seller, body: { status: "n'importe quoi" } });
+  ok("statut d'annonce inconnu refuse", r.status === 400);
+
+  console.log("\n--- Annonces : validation et paliers ---");
+  r = await call("POST", "/api/products", { token: seller, body: { title: "Test", category: "boutique", price: -5 } });
+  ok("prix negatif refuse", r.status === 400);
+  r = await call("PATCH", `/api/products/${p.id}`, {
+    token: seller,
+    body: { tiers: [{ min_qty: 500, price: p.price - 1000 }, { min_qty: 900, price: p.price - 2000 }] },
+  });
+  ok("les paliers sont enregistres en modification", r.body.product?.tiers.length === 2);
+  r = await call("PATCH", `/api/products/${p.id}`, { token: seller, body: { tiers: [{ min_qty: 50, price: p.price + 1 }] } });
+  ok("palier plus cher que le prix refuse", r.status === 400);
+
+  console.log("\n--- Recherche et avis ---");
+  r = await call("GET", "/api/products?q=pates");
+  ok("recherche insensible aux accents", r.body.products.some((x) => x.title.startsWith("Pâtes")));
+  r = await call("POST", "/api/sellers/3/reviews", { token: buyer, body: { rating: 5 } });
+  ok("pas d'avis sans commande livree", r.status === 403);
+  r = await call("POST", "/api/sellers/1/reviews", { token: seller, body: { rating: 5 } });
+  ok("pas d'avis sur soi-meme", r.status === 400);
+  r = await call("POST", "/api/sellers/2/reviews", { token: buyer, body: { rating: 0 } });
+  ok("note hors limites refusee", r.status === 400);
+  r = await call("GET", "/api/orders", { token: buyer });
+  const livree = r.body.orders.find((o) => o.status === "livree");
+  if (livree) {
+    await call("POST", `/api/sellers/${livree.seller_id}/reviews`, { token: buyer, body: { rating: 2 } });
+    r = await call("POST", `/api/sellers/${livree.seller_id}/reviews`, { token: buyer, body: { rating: 4 } });
+    const avis = (await call("GET", `/api/sellers/${livree.seller_id}`)).body.reviews.filter((x) => x.author_name === "Mamadou Barry");
+    ok("un seul avis par acheteur, mis a jour", r.status === 200 && avis.length === 1 && avis[0].rating === 4);
+  } else {
+    ok("commande livree de demonstration presente", false);
+  }
+
+  console.log("\n--- Profil ---");
+  r = await call("PATCH", "/api/auth/me", { token: buyer, body: { name: "   " } });
+  ok("nom vide refuse", r.status === 400);
+  r = await call("PATCH", "/api/auth/me", { token: buyer, body: { email: "pas-un-email" } });
+  ok("email invalide refuse", r.status === 400);
 } finally {
   server.kill();
 }

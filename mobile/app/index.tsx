@@ -86,6 +86,14 @@ export default function Onboarding() {
         </View>
 
         <View className="flex-col gap-6">
+          <View className="gap-2">
+            <Text className="font-extrabold text-white text-3xl leading-9 tracking-tight">
+              Achetez en gros, directement aux producteurs
+            </Text>
+            <Text className="text-sm leading-5 text-white/80">
+              Importateurs, agriculteurs et industriels de Guinée réunis pour les commerçants et les particuliers.
+            </Text>
+          </View>
           <View className="flex-row items-center gap-2">
             {SLIDES.map((s, i) => (
               <View

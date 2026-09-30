@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { router } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
@@ -12,6 +12,7 @@ import { ErrorNote, Spinner } from "@/components/ui/feedback";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { imageUrl, TAILLES } from "@/lib/image";
 import { formatGNF } from "@/lib/utils";
 
 interface TierDraft {
@@ -28,6 +29,12 @@ export function PublishForm({ id }: { id?: string }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Le message d'erreur est en haut du formulaire, le bouton tout en bas.
+  useEffect(() => {
+    if (error) scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [error]);
 
   const [form, setForm] = useState({
     title: "",
@@ -75,7 +82,7 @@ export function PublishForm({ id }: { id?: string }) {
 
   async function pickImage() {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"],
       quality: 0.8,
     });
     if (result.canceled || !result.assets[0]) return;
@@ -100,6 +107,10 @@ export function PublishForm({ id }: { id?: string }) {
     if (!form.title.trim()) return setError("Donnez un titre à votre annonce");
     if (!form.category) return setError("Choisissez une catégorie");
     if (!form.price || Number(form.price) <= 0) return setError("Indiquez un prix valide");
+    // Sans stock, l'annonce apparait « en rupture » et personne ne peut la commander.
+    if (!form.stock || Number(form.stock) <= 0) return setError("Indiquez la quantité disponible en stock");
+    const badTier = tiers.find((t) => t.min_qty && t.price && Number(t.price) >= Number(form.price));
+    if (badTier) return setError("Un prix dégressif doit être inférieur au prix unitaire");
 
     const payload = {
       ...form,
@@ -134,13 +145,13 @@ export function PublishForm({ id }: { id?: string }) {
     <View className="flex-1 bg-canvas dark:bg-canvas-dark">
       <TopBar title={editing ? "Modifier l'annonce" : "Publier un produit"} subtitle={editing ? undefined : "Visible immédiatement par les acheteurs"} />
 
-      <ScrollView contentContainerClassName="flex-col gap-5 p-5" keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerClassName="flex-col gap-5 p-5" keyboardShouldPersistTaps="handled">
         <ErrorNote>{error}</ErrorNote>
 
         <Field label="Photo du produit" hint="Une bonne photo multiplie les contacts par trois">
           {form.image_url ? (
             <View className="relative">
-              <Image source={{ uri: form.image_url }} style={{ height: 176, width: "100%", borderRadius: 16 }} contentFit="cover" />
+              <Image source={{ uri: imageUrl(form.image_url, TAILLES.ficheProduit) }} style={{ height: 176, width: "100%", borderRadius: 16 }} contentFit="cover" />
               <Pressable onPress={() => set("image_url", "")} className="absolute top-2 right-2 size-8 rounded-full bg-white/90 items-center justify-center">
                 <X size={16} color="#09090b" />
               </Pressable>
@@ -203,7 +214,7 @@ export function PublishForm({ id }: { id?: string }) {
           </View>
         </View>
 
-        <Field label="Quantité disponible en stock">
+        <Field label="Quantité disponible en stock" required>
           <Input keyboardType="numeric" value={form.stock} onChangeText={(v) => set("stock", v)} placeholder="1800" />
         </Field>
 

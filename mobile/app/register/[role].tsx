@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, router, useLocalSearchParams } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { ArrowRight, Check, Eye, EyeOff } from "lucide-react-native";
@@ -76,6 +76,20 @@ const EXTRA_FIELDS: Record<Role, ExtraField[]> = {
   particulier: [{ name: "interets", label: "Ce que vous cherchez", placeholder: "Riz, ciment, jus…" }],
 };
 
+const PRESENTATION_PLACEHOLDER: Record<Role, string> = {
+  importateur: "Importateur agréé depuis 2014, riz et huile en conteneurs complets…",
+  agriculteur: "Coopérative de 40 producteurs, pomme de terre et oignon de Timbi-Madina…",
+  industriel: "Usine de jus et d'eau minérale à Kindia, livraison dans tout le pays…",
+  detaillant: "Boutique au marché Madina, revente de produits alimentaires…",
+  particulier: "",
+};
+
+/** Secteur propose d'office quand le profil le laisse deviner. */
+const DEFAULT_CATEGORY: Partial<Record<Role, string>> = {
+  agriculteur: "agriculture",
+  industriel: "industriel",
+};
+
 export default function Register() {
   const { role: roleParam } = useLocalSearchParams<{ role: string }>();
   const { register } = useAuth();
@@ -93,13 +107,24 @@ export default function Register() {
   const [phoneError, setPhoneError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Le message d'erreur s'affiche en haut du formulaire : on y remonte, sinon
+  // l'utilisateur appuie en bas de page sans voir pourquoi rien ne se passe.
+  // Meme chose au changement d'etape, pour repartir du titre.
+  useEffect(() => {
+    if (error) scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, [error]);
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [step]);
 
   const [form, setForm] = useState<Record<string, string>>({
     name: "",
     phone: "",
     password: "",
     company: "",
-    category: "",
+    category: DEFAULT_CATEGORY[(roleParam as Role) || "detaillant"] ?? "",
     region: "",
     prefecture: "",
     address: "",
@@ -179,6 +204,7 @@ export default function Register() {
     setLoading(true);
     try {
       const user = await register({
+        accept_terms: true,
         name: form.name,
         phone: form.phone,
         password: form.password,
@@ -214,7 +240,7 @@ export default function Register() {
         right={<Text className="text-xs font-medium text-muted dark:text-muted-dark">Étape {step + 1} sur 2</Text>}
       />
 
-      <ScrollView contentContainerClassName="flex-col gap-6 p-7" keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerClassName="flex-col gap-6 p-7" keyboardShouldPersistTaps="handled">
         <View className="flex-col gap-3">
           <View className="flex-row items-center gap-3">
             <View className="size-12 rounded-2xl bg-brand/10 items-center justify-center">
@@ -385,7 +411,7 @@ export default function Register() {
                 <Textarea
                   value={form.description}
                   onChangeText={(v) => set("description", v)}
-                  placeholder="Importateur agréé depuis 2014, riz et huile en conteneurs complets…"
+                  placeholder={PRESENTATION_PLACEHOLDER[role]}
                 />
               </Field>
             ) : null}
@@ -393,7 +419,19 @@ export default function Register() {
             <Checkbox
               checked={accepted}
               onToggle={() => setAccepted((a) => !a)}
-              label="J'accepte les conditions d'utilisation et la politique de confidentialité de Yehoo."
+              label={
+                <>
+                  J'accepte les{" "}
+                  <Text className="font-semibold text-brand" onPress={() => router.push("/legal/cgu")}>
+                    conditions d'utilisation
+                  </Text>{" "}
+                  et la{" "}
+                  <Text className="font-semibold text-brand" onPress={() => router.push("/legal/confidentialite")}>
+                    politique de confidentialité
+                  </Text>{" "}
+                  de Yehoo. Les contenus abusifs n'y sont pas tolérés.
+                </>
+              }
             />
           </View>
         )}

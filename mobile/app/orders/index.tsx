@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import { PackageOpen } from "lucide-react-native";
 import { api } from "@/lib/api";
 import type { Order } from "@/lib/types";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE } from "@/lib/constants";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE, ORDER_STATUS_TEXT } from "@/lib/constants";
 import { TopBar } from "@/components/layout/TopBar";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { Button } from "@/components/ui/button";
@@ -89,7 +89,7 @@ function Orders() {
               <View className="flex-row items-center justify-between">
                 <Text className="font-mono text-xs text-muted dark:text-muted-dark">{order.reference}</Text>
                 <View className={cn("rounded-full px-2.5 py-0.5", ORDER_STATUS_STYLE[order.status])}>
-                  <Text className="text-[11px] font-semibold">{ORDER_STATUS_LABEL[order.status]}</Text>
+                  <Text className={cn("text-[11px] font-semibold", ORDER_STATUS_TEXT[order.status])}>{ORDER_STATUS_LABEL[order.status]}</Text>
                 </View>
               </View>
               <Text className="mt-2 text-sm font-semibold text-fg dark:text-fg-dark">{order.seller?.company || order.seller?.name}</Text>

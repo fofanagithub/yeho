@@ -1,6 +1,6 @@
 # Yehoo — application mobile (Expo)
 
-Portage complet des 21 écrans de l'application web en React Native, avec
+Application iOS / Android en React Native, avec
 [Expo Router](https://docs.expo.dev/router/introduction/) pour la navigation
 et [NativeWind](https://www.nativewind.dev/) pour le style (classes Tailwind,
 même palette de couleurs claire/sombre que le site).
@@ -33,10 +33,22 @@ L'app détecte automatiquement l'adresse IP de votre ordinateur (via Expo) et
 s'en sert pour joindre l'API sur le port 4000. Aucune configuration manuelle
 n'est nécessaire en développement.
 
+Pour l'essayer dans un navigateur : `npx expo start --web`.
+
+Avant de considérer une modification comme terminée :
+
+```bash
+npx tsc --noEmit   # typecheck
+npx expo lint      # lint
+```
+
 ## Compte de démonstration
 
 Mêmes comptes que la version web (voir [../README.md](../README.md)) :
 téléphone `620 00 00 07`, mot de passe `motdepasse`.
+
+En développement, l'écran de connexion propose un raccourci qui remplit ces
+identifiants. Il n'apparaît **pas** dans une build de production (`__DEV__`).
 
 ## Si le téléphone n'arrive pas à joindre l'API
 
@@ -54,22 +66,71 @@ app/                  écrans, routage par fichiers (Expo Router)
   (tabs)/              accueil, recherche, publier, messages, profil
   product/[id].tsx      fiche produit
   seller/                boutique publique + espace vendeur
-  orders/, chat/, ...     autres écrans plein écran
-components/            composants UI (ui/, layout/, ProductCard, PublishForm)
-context/               Auth, Cart, Toast, Theme (équivalents des contextes web)
-lib/                   client API, types, constantes — portés de src/lib/
+  orders/                historique et suivi de commande (avec notation du vendeur)
+  account/               comptes bloqués, suppression du compte
+  legal/[doc].tsx        conditions d'utilisation (cgu) et confidentialité
+  chat/, cart, checkout…  autres écrans plein écran
+components/            ui/, layout/, ProductCard, PublishForm,
+                       ModerationSheet (signaler / bloquer), ReviewCard
+context/               Auth, Cart, Toast, Theme
+lib/                   client API, types, constantes, legal.ts (textes CGU et
+                       confidentialité), confirm.ts, image.ts, utils.ts
 ```
+
+## Publication App Store
+
+Configuration déjà en place dans `app.json` :
+
+- `ios.bundleIdentifier` / `android.package` : `gn.yehoo.app`
+- `ios.buildNumber` : `1` (à incrémenter à chaque envoi à Apple)
+- `supportsTablet: false` — pas de captures d'écran iPad à fournir
+- textes d'autorisation photos et appareil photo (plugin `expo-image-picker`), micro désactivé
+- `ITSAppUsesNonExemptEncryption: false` — évite la question sur le chiffrement à chaque envoi
+
+Exigences Apple couvertes par l'application :
+
+- **Suppression de compte** (règle 5.1.1) : Profil → Supprimer mon compte.
+- **Contenu des utilisateurs** (règle 1.2) : CGU acceptées à l'inscription,
+  bouton « ⋯ » pour signaler ou bloquer (fiche produit, boutique, conversation),
+  appui long sur un message, drapeau sur un avis, liste des comptes bloqués dans le profil.
+
+Étapes, sans Mac, avec [EAS](https://docs.expo.dev/eas/) :
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest build --platform ios
+npx eas-cli@latest submit --platform ios
+```
+
+Avant la première soumission :
+
+1. Héberger l'API en **HTTPS** et renseigner `extra.apiUrl` dans `app.json`
+   (iOS refuse le HTTP simple).
+2. Remplacer `SUPPORT_EMAIL` dans `lib/legal.ts` par une vraie adresse.
+3. Publier la politique de confidentialité à une adresse web (demandée par App Store Connect).
+4. Tester via **TestFlight** sur un vrai iPhone (sélection de photo, clavier, mode sombre).
+5. Dans les notes pour l'équipe de vérification d'Apple : fournir un compte de test,
+   indiquer où se trouvent le signalement (« ⋯ ») et la suppression de compte (Profil).
 
 ## Notes techniques
 
 - Le token de session est stocké via `AsyncStorage` (équivalent mobile de
   `localStorage`).
 - Le thème clair/sombre/auto est piloté par NativeWind (`useColorScheme` de
-  `nativewind`), avec persistance du choix dans `AsyncStorage`.
-- Les icônes utilisent `lucide-react-native` (même bibliothèque que le web),
-  avec une couleur explicite par icône — React Native ne permet pas de
-  colorer un SVG via une classe Tailwind sans configuration supplémentaire.
+  `nativewind`), avec persistance du choix dans `AsyncStorage`. Sur le web, la
+  classe `dark` est posée sur `<html>` (`darkMode: "class"`).
+- `tailwind.config.js` scanne aussi `lib/` et `context/` : les couleurs des
+  catégories et des statuts de commande y sont déclarées.
+- En React Native, la couleur de texte posée sur une `View` n'est **pas**
+  héritée par le `Text` enfant : fond et texte sont donc des classes séparées
+  (`color` / `text` dans `CATEGORIES`, `ORDER_STATUS_STYLE` / `ORDER_STATUS_TEXT`).
+- Les icônes utilisent `lucide-react-native` avec une couleur explicite ;
+  `lib/useIconColor.ts` donne une couleur lisible dans les deux thèmes.
+- Les images Unsplash sont demandées à la bonne résolution pour l'écran
+  (`lib/image.ts` multiplie la largeur par la densité de pixels).
+- Confirmations destructives : `lib/confirm.ts` utilise `Alert.alert` sur
+  téléphone et `window.confirm` sur le web (où `Alert.alert` ne fait rien).
 - Publication d'annonces : la sélection de photo passe par
-  `expo-image-picker` (galerie du téléphone) au lieu d'un `<input type=file>`.
+  `expo-image-picker` (galerie du téléphone).
 - Fonctionne dans **Expo Go** tel quel : aucune des dépendances utilisées ne
   nécessite un build natif personnalisé (`expo prebuild` / dev client).

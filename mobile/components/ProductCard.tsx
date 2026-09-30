@@ -2,7 +2,7 @@ import { Link } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { BadgeCheck, Heart, MapPin, Package } from "lucide-react-native";
-import { cn, formatGNF } from "@/lib/utils";
+import { cn, formatGNF, unitLabel } from "@/lib/utils";
 import { imageUrl, TAILLES } from "@/lib/image";
 import type { Product } from "@/lib/types";
 import { CATEGORY_MAP } from "@/lib/constants";
@@ -32,7 +32,7 @@ export function ProductCard({
             </View>
             <Text className="font-bold text-brand text-base leading-6">
               {formatGNF(product.price)}
-              <Text className="font-normal text-muted dark:text-muted-dark text-xs"> / {product.unit}</Text>
+              <Text className="font-normal text-muted dark:text-muted-dark text-xs"> / {unitLabel(product.unit)}</Text>
             </Text>
             <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1">
               <View className="flex-row items-center gap-1">
@@ -60,7 +60,7 @@ export function ProductCard({
           <Thumb product={product} width={TAILLES.carteGrille} className="aspect-[4/3] w-full" rounded={false} />
           {category ? (
             <View className={cn("absolute top-2 left-2 rounded-full px-2 py-0.5", category.color)}>
-              <Text className="text-[10px] font-semibold">{category.label}</Text>
+              <Text className={cn("text-[10px] font-semibold", category.text)}>{category.label}</Text>
             </View>
           ) : null}
           {onToggleFavorite ? (
@@ -75,7 +75,7 @@ export function ProductCard({
           </Text>
           <Text className="font-bold text-brand text-sm leading-5">
             {formatGNF(product.price)}
-            <Text className="font-normal text-muted dark:text-muted-dark text-[11px]"> / {product.unit}</Text>
+            <Text className="font-normal text-muted dark:text-muted-dark text-[11px]"> / {unitLabel(product.unit)}</Text>
           </Text>
           <SellerLine product={product} />
         </View>
@@ -134,7 +134,12 @@ function FavButton({
 }) {
   return (
     <Pressable
-      onPress={() => onToggle(product)}
+      onPress={(e) => {
+        // Le cœur est dans le lien de la carte : sans cela, le clic ouvre aussi la fiche produit (web).
+        e.preventDefault();
+        e.stopPropagation();
+        onToggle(product);
+      }}
       hitSlop={8}
       className={cn("items-center justify-center rounded-full", solid ? "size-7 bg-white/90" : "size-6")}
     >

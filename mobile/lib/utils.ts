@@ -54,3 +54,14 @@ export function initials(name?: string | null) {
     .map((w) => w[0]?.toUpperCase())
     .join("");
 }
+
+/**
+ * Unite de vente affichable : « unite » prend son accent, et l'unite passe au
+ * pluriel au-dela de 1 (« 5 cagettes »), sauf les symboles comme « kg ».
+ */
+export function unitLabel(unit: string | null | undefined, quantity = 1) {
+  if (!unit) return "";
+  const word = unit === "unite" ? "unité" : unit;
+  if (quantity <= 1 || word === "kg" || /[sxz]$/.test(word)) return word;
+  return `${word}s`;
+}

@@ -78,15 +78,20 @@ export const ROLE_ICONS: Record<Role, LucideIcon> = {
   particulier: User,
 };
 
-export const CATEGORIES: { value: string; label: string; icon: LucideIcon; color: string }[] = [
-  { value: "agriculture", label: "Agriculture", icon: Sprout, color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" },
-  { value: "alimentation", label: "Alimentation", icon: Apple, color: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300" },
-  { value: "boissons", label: "Boissons", icon: Beer, color: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300" },
-  { value: "construction", label: "Construction", icon: HardHat, color: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300" },
-  { value: "industriel", label: "Industriel", icon: Factory, color: "bg-subtle-strong text-fg-soft" },
-  { value: "pharmacie", label: "Pharmacie", icon: Pill, color: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300" },
-  { value: "textile", label: "Textile", icon: Shirt, color: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300" },
-  { value: "boutique", label: "Boutique", icon: Store, color: "bg-lime-100 text-lime-700 dark:bg-lime-500/15 dark:text-lime-300" },
+/**
+ * `color` (fond) et `text` (texte) sont separes : en React Native, la couleur
+ * de texte posee sur une View n'est pas heritee par le Text enfant.
+ * `hex` sert aux icones, qui prennent une couleur et non une classe.
+ */
+export const CATEGORIES: { value: string; label: string; icon: LucideIcon; color: string; text: string; hex: string }[] = [
+  { value: "agriculture", label: "Agriculture", icon: Sprout, color: "bg-emerald-100 dark:bg-emerald-500/15", text: "text-emerald-700 dark:text-emerald-300", hex: "#10b981" },
+  { value: "alimentation", label: "Alimentation", icon: Apple, color: "bg-orange-100 dark:bg-orange-500/15", text: "text-orange-700 dark:text-orange-300", hex: "#f97316" },
+  { value: "boissons", label: "Boissons", icon: Beer, color: "bg-sky-100 dark:bg-sky-500/15", text: "text-sky-700 dark:text-sky-300", hex: "#0ea5e9" },
+  { value: "construction", label: "Construction", icon: HardHat, color: "bg-amber-100 dark:bg-amber-500/15", text: "text-amber-700 dark:text-amber-300", hex: "#f59e0b" },
+  { value: "industriel", label: "Industriel", icon: Factory, color: "bg-slate-100 dark:bg-slate-500/15", text: "text-slate-700 dark:text-slate-300", hex: "#64748b" },
+  { value: "pharmacie", label: "Pharmacie", icon: Pill, color: "bg-rose-100 dark:bg-rose-500/15", text: "text-rose-700 dark:text-rose-300", hex: "#f43f5e" },
+  { value: "textile", label: "Textile", icon: Shirt, color: "bg-violet-100 dark:bg-violet-500/15", text: "text-violet-700 dark:text-violet-300", hex: "#8b5cf6" },
+  { value: "boutique", label: "Boutique", icon: Store, color: "bg-lime-100 dark:bg-lime-500/15", text: "text-lime-700 dark:text-lime-300", hex: "#65a30d" },
 ];
 
 export const CATEGORY_MAP = Object.fromEntries(CATEGORIES.map((c) => [c.value, c]));
@@ -145,10 +150,19 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
 };
 
 export const ORDER_STATUS_STYLE: Record<string, string> = {
-  en_attente: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-  confirmee: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300",
-  en_preparation: "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300",
-  en_route: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
-  livree: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-  annulee: "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+  en_attente: "bg-amber-100 dark:bg-amber-500/15",
+  confirmee: "bg-sky-100 dark:bg-sky-500/15",
+  en_preparation: "bg-violet-100 dark:bg-violet-500/15",
+  en_route: "bg-blue-100 dark:bg-blue-500/15",
+  livree: "bg-emerald-100 dark:bg-emerald-500/15",
+  annulee: "bg-rose-100 dark:bg-rose-500/15",
+};
+
+export const ORDER_STATUS_TEXT: Record<string, string> = {
+  en_attente: "text-amber-700 dark:text-amber-300",
+  confirmee: "text-sky-700 dark:text-sky-300",
+  en_preparation: "text-violet-700 dark:text-violet-300",
+  en_route: "text-blue-700 dark:text-blue-300",
+  livree: "text-emerald-700 dark:text-emerald-300",
+  annulee: "text-rose-700 dark:text-rose-300",
 };

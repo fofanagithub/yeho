@@ -3,17 +3,19 @@ import { router, useLocalSearchParams } from "expo-router";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Package, Send } from "lucide-react-native";
+import { Ban, Package, Send } from "lucide-react-native";
 import { api } from "@/lib/api";
 import type { Conversation, Message } from "@/lib/types";
 import { TopBar } from "@/components/layout/TopBar";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/feedback";
+import { ModerationMenu, ReportSheet } from "@/components/ModerationSheet";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { imageUrl } from "@/lib/image";
-import { cn, formatGNF, formatTime } from "@/lib/utils";
+import { ROLE_MAP } from "@/lib/constants";
+import { cn, formatGNF, formatTime, unitLabel } from "@/lib/utils";
 
 const QUICK_REPLIES = [
   "Bonjour, ce produit est-il disponible ?",
@@ -41,6 +43,9 @@ function Chat() {
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [canReply, setCanReply] = useState(true);
+  const [reportedMessage, setReportedMessage] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -48,10 +53,12 @@ function Chat() {
     const load = () =>
       api
         .messages(id)
-        .then(({ conversation, messages }) => {
+        .then(({ conversation, messages, blocked, can_reply }) => {
           if (!alive) return;
           setConversation(conversation);
           setMessages(messages);
+          setBlocked(blocked);
+          setCanReply(can_reply);
         })
         .catch(() => toast("Conversation introuvable", "error"))
         .finally(() => alive && setLoading(false));
@@ -95,12 +102,23 @@ function Chat() {
     >
       <TopBar
         title={partner?.company || partner?.name}
-        subtitle={partner?.region ? `${partner.role} · ${partner.region}` : partner?.role}
+        subtitle={[partner?.role ? ROLE_MAP[partner.role]?.label : null, partner?.region].filter(Boolean).join(" · ")}
         right={
           partner ? (
-            <Pressable onPress={() => router.push(`/seller/${partner.id}`)}>
-              <Avatar name={partner.company || partner.name} src={partner.avatar_url} size={36} verified={partner.verified} />
-            </Pressable>
+            <View className="flex-row items-center gap-1">
+              <ModerationMenu
+                target={{ type: "user", id: partner.id }}
+                person={{ id: partner.id, name: partner.company || partner.name }}
+                blocked={blocked}
+                onBlockedChange={(b) => {
+                  setBlocked(b);
+                  setCanReply(!b);
+                }}
+              />
+              <Pressable onPress={() => router.push(`/seller/${partner.id}`)}>
+                <Avatar name={partner.company || partner.name} src={partner.avatar_url} size={36} verified={partner.verified} />
+              </Pressable>
+            </View>
           ) : null
         }
       />
@@ -123,7 +141,7 @@ function Chat() {
             </Text>
             <Text className="text-xs text-brand font-semibold">
               {formatGNF(conversation.product.price)}
-              <Text className="font-normal text-muted dark:text-muted-dark"> / {conversation.product.unit}</Text>
+              <Text className="font-normal text-muted dark:text-muted-dark"> / {unitLabel(conversation.product.unit)}</Text>
             </Text>
           </View>
         </Pressable>
@@ -135,14 +153,22 @@ function Chat() {
           const showTime = i === messages.length - 1 || messages[i + 1]?.sender_id !== m.sender_id;
           return (
             <View key={m.id} className={cn("flex-col", mine ? "items-end" : "items-start")}>
-              <View
-                className={cn(
-                  "max-w-[80%] rounded-2xl px-3.5 py-2.5",
-                  mine ? "bg-brand rounded-br-md" : "bg-subtle dark:bg-subtle-dark rounded-bl-md",
-                )}
+              <Pressable
+                disabled={mine}
+                onLongPress={() => setReportedMessage(m.id)}
+                delayLongPress={400}
+                accessibilityHint={mine ? undefined : "Appui long pour signaler ce message"}
+                className="max-w-[80%]"
               >
-                <Text className={cn("text-sm leading-snug", mine ? "text-white" : "text-fg-soft dark:text-fg-soft-dark")}>{m.body}</Text>
-              </View>
+                <View
+                  className={cn(
+                    "rounded-2xl px-3.5 py-2.5",
+                    mine ? "bg-brand rounded-br-md" : "bg-subtle dark:bg-subtle-dark rounded-bl-md",
+                  )}
+                >
+                  <Text className={cn("text-sm leading-snug", mine ? "text-white" : "text-fg-soft dark:text-fg-soft-dark")}>{m.body}</Text>
+                </View>
+              </Pressable>
               {showTime ? <Text className="mt-0.5 px-1 text-[10px] text-faint dark:text-faint-dark">{formatTime(m.created_at)}</Text> : null}
             </View>
           );
@@ -159,25 +185,45 @@ function Chat() {
         ) : null}
       </ScrollView>
 
-      <View
-        className="flex-row items-center gap-2 border-t border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-3"
-        style={{ paddingBottom: insets.bottom + 12 }}
-      >
-        <TextInput
-          value={body}
-          onChangeText={setBody}
-          placeholder="Écrire un message…"
-          placeholderTextColor="#8e8e98"
-          className="h-11 flex-1 rounded-full border border-line dark:border-line-dark bg-subtle-soft dark:bg-subtle-soft-dark px-4 text-sm text-fg dark:text-fg-dark"
-        />
-        <Pressable
-          onPress={() => send()}
-          disabled={!body.trim() || sending}
-          className="size-11 shrink-0 rounded-full bg-brand items-center justify-center disabled:opacity-40"
+      {!canReply ? (
+        <View
+          className="flex-row items-center justify-center gap-2 border-t border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-4"
+          style={{ paddingBottom: insets.bottom + 16 }}
         >
-          <Send size={20} color="#ffffff" />
-        </Pressable>
-      </View>
+          <Ban size={16} color="#8e8e98" />
+          <Text className="text-sm text-muted dark:text-muted-dark">
+            {blocked ? "Vous avez bloqué ce contact" : "Vous ne pouvez plus répondre à cette conversation"}
+          </Text>
+        </View>
+      ) : (
+        <View
+          className="flex-row items-center gap-2 border-t border-line dark:border-line-dark bg-surface dark:bg-surface-dark p-3"
+          style={{ paddingBottom: insets.bottom + 12 }}
+        >
+          <TextInput
+            value={body}
+            onChangeText={setBody}
+            placeholder="Écrire un message…"
+            returnKeyType="send"
+            submitBehavior="submit"
+            onSubmitEditing={() => send()}
+            placeholderTextColor="#8e8e98"
+            className="h-11 flex-1 rounded-full border border-line dark:border-line-dark bg-subtle-soft dark:bg-subtle-soft-dark px-4 text-sm text-fg dark:text-fg-dark"
+          />
+          <Pressable
+            onPress={() => send()}
+            disabled={!body.trim() || sending}
+            className="size-11 shrink-0 rounded-full bg-brand items-center justify-center disabled:opacity-40"
+          >
+            <Send size={20} color="#ffffff" />
+          </Pressable>
+        </View>
+      )}
+
+      <ReportSheet
+        target={reportedMessage ? { type: "message", id: reportedMessage } : null}
+        onClose={() => setReportedMessage(null)}
+      />
     </KeyboardAvoidingView>
   );
 }

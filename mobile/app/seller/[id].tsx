@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { BadgeCheck, MapPin, MessageCircle, Package, Phone, Star } from "lucide-react-native";
+import { Ban, BadgeCheck, Flag, MapPin, MessageCircle, Package, Phone, Star } from "lucide-react-native";
 import { api } from "@/lib/api";
+import { useIconColor } from "@/lib/useIconColor";
 import type { Product, User } from "@/lib/types";
 import { ROLE_MAP } from "@/lib/constants";
 import { TopBar } from "@/components/layout/TopBar";
@@ -10,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge, EmptyState, Spinner } from "@/components/ui/feedback";
 import { ProductCard } from "@/components/ProductCard";
+import { ModerationMenu, ReportSheet } from "@/components/ModerationSheet";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { formatDate, timeAgo } from "@/lib/utils";
@@ -26,20 +28,24 @@ export default function SellerPublic() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const toast = useToast();
+  const iconColor = useIconColor();
 
   const [seller, setSeller] = useState<User | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [sales, setSales] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [blocked, setBlocked] = useState(false);
+  const [reportedReview, setReportedReview] = useState<number | null>(null);
 
   useEffect(() => {
     let alive = true;
     api
       .seller(id)
-      .then(({ seller, products, reviews, sales }) => {
+      .then(({ seller, products, reviews, sales, blocked }) => {
         if (!alive) return;
         setSeller(seller);
+        setBlocked(blocked);
         setProducts(products);
         setReviews(reviews);
         setSales(sales);
@@ -78,8 +84,27 @@ export default function SellerPublic() {
 
   return (
     <View className="flex-1 bg-canvas dark:bg-canvas-dark">
-      <TopBar title={seller.company || seller.name} subtitle={role?.label} />
+      <TopBar
+        title={seller.company || seller.name}
+        subtitle={role?.label}
+        right={
+          <ModerationMenu
+            target={{ type: "user", id: seller.id }}
+            person={{ id: seller.id, name: seller.company || seller.name }}
+            blocked={blocked}
+            onBlockedChange={setBlocked}
+          />
+        }
+      />
       <ScrollView contentContainerClassName="flex-col gap-5 p-5">
+        {blocked ? (
+          <View className="flex-row items-center gap-2 rounded-2xl bg-rose-50 dark:bg-rose-950/40 p-3">
+            <Ban size={16} color="#e11d48" />
+            <Text className="flex-1 text-xs text-rose-700 dark:text-rose-300">
+              Vous avez bloqué ce compte : ses annonces et messages ne vous sont plus montrés.
+            </Text>
+          </View>
+        ) : null}
         <View className="flex-row items-start gap-4">
           <Avatar name={seller.company || seller.name} src={seller.avatar_url} size={64} verified={seller.verified} />
           <View className="flex-1">
@@ -127,10 +152,13 @@ export default function SellerPublic() {
             <MessageCircle size={16} color="#00c950" />
             <Text className="font-semibold text-brand text-sm ml-2">Message</Text>
           </Button>
-          <Button variant="secondary" className="flex-1" onPress={() => Linking.openURL(`tel:${seller.phone}`)}>
-            <Phone size={16} color="#09090b" />
-            <Text className="font-semibold text-fg dark:text-fg-dark text-sm ml-2">Appeler</Text>
-          </Button>
+          {/* L'API ne publie pas le numero des vendeurs : pas de bouton qui composerait « tel:undefined ». */}
+          {seller.phone ? (
+            <Button variant="secondary" className="flex-1" onPress={() => Linking.openURL(`tel:${seller.phone}`)}>
+              <Phone size={16} color={iconColor} />
+              <Text className="font-semibold text-fg dark:text-fg-dark text-sm ml-2">Appeler</Text>
+            </Button>
+          ) : null}
         </View>
 
         <View className="flex-col gap-3">
@@ -155,7 +183,16 @@ export default function SellerPublic() {
               <View key={r.id} className="rounded-2xl border border-line dark:border-line-dark p-4">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm font-semibold text-fg dark:text-fg-dark">{r.author_name}</Text>
-                  <Text className="text-xs text-faint dark:text-faint-dark">{timeAgo(r.created_at)}</Text>
+                  <View className="flex-row items-center gap-3">
+                    <Text className="text-xs text-faint dark:text-faint-dark">{timeAgo(r.created_at)}</Text>
+                    <Pressable
+                      hitSlop={10}
+                      accessibilityLabel="Signaler cet avis"
+                      onPress={() => (user ? setReportedReview(r.id) : router.push("/login"))}
+                    >
+                      <Flag size={14} color="#8e8e98" />
+                    </Pressable>
+                  </View>
                 </View>
                 <View className="mt-1 flex-row gap-0.5">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -168,6 +205,10 @@ export default function SellerPublic() {
           </View>
         ) : null}
       </ScrollView>
+      <ReportSheet
+        target={reportedReview ? { type: "review", id: reportedReview } : null}
+        onClose={() => setReportedReview(null)}
+      />
     </View>
   );
 }

@@ -4,13 +4,15 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { ChevronRight, Eye, MessageCircle, Package, PlusCircle, ShoppingBag, TrendingUp, Wallet } from "lucide-react-native";
 import { api } from "@/lib/api";
 import type { Order, SellerStats } from "@/lib/types";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE } from "@/lib/constants";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE, ORDER_STATUS_TEXT } from "@/lib/constants";
 import { TopBar } from "@/components/layout/TopBar";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/feedback";
 import { useAuth } from "@/context/AuthContext";
 import { cn, formatGNF, formatNumber, timeAgo } from "@/lib/utils";
+
+const MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
 
 export default function DashboardScreen() {
   return (
@@ -85,7 +87,7 @@ function Dashboard() {
                 <View key={m.month} className="flex-1 items-center gap-1.5">
                   <Text className="text-[10px] text-muted dark:text-muted-dark">{formatGNF(m.revenue, { short: true })}</Text>
                   <View className="w-full rounded-t-md bg-brand/80" style={{ height: Math.max(4, (m.revenue / maxRevenue) * 72) }} />
-                  <Text className="text-[10px] text-faint dark:text-faint-dark">{m.month.slice(5)}</Text>
+                  <Text className="text-[10px] text-faint dark:text-faint-dark">{MOIS[Number(m.month.slice(5)) - 1]}</Text>
                 </View>
               ))}
             </View>
@@ -114,7 +116,7 @@ function Dashboard() {
                   <View className="flex-row items-center gap-2">
                     <Text className="font-mono text-[11px] text-faint dark:text-faint-dark">{order.reference}</Text>
                     <View className={cn("rounded-full px-2 py-0.5", ORDER_STATUS_STYLE[order.status])}>
-                      <Text className="text-[10px] font-semibold">{ORDER_STATUS_LABEL[order.status]}</Text>
+                      <Text className={cn("text-[10px] font-semibold", ORDER_STATUS_TEXT[order.status])}>{ORDER_STATUS_LABEL[order.status]}</Text>
                     </View>
                   </View>
                   <Text numberOfLines={1} className="text-sm font-semibold text-fg dark:text-fg-dark">

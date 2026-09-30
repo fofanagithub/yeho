@@ -6,7 +6,8 @@
  * La verification s'execute a l'import : ce module doit donc etre importe
  * AVANT db.js, qui charge node:sqlite des son evaluation.
  */
-const MINIMUM = [22, 5, 0];
+// 22.13 : premiere version ou DatabaseSync.function() (fonctions SQL en JS) existe.
+const MINIMUM = [22, 13, 0];
 
 function checkNodeVersion() {
   const current = process.versions.node.split(".").map(Number);

@@ -8,13 +8,20 @@
     "scheme": "yehoo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": false,
+      "bundleIdentifier": "gn.yehoo.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#00c950"
-      }
+      },
+      "package": "gn.yehoo.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +40,15 @@
         }
       ],
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Yehoo accède à vos photos pour que vous puissiez ajouter des images à vos annonces et à votre profil.",
+          "cameraPermission": "Yehoo utilise l’appareil photo pour photographier les produits que vous mettez en vente.",
+          "microphonePermission": false
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -37,6 +37,12 @@ function priceFor(line: CartLine) {
   return tier?.price ?? line.price;
 }
 
+/** Borne une quantite entre le minimum de commande et le stock connu. */
+function clampQty(qty: number, line: Pick<CartLine, "min_order" | "stock">) {
+  const max = line.stock && line.stock > 0 ? line.stock : Infinity;
+  return Math.min(max, Math.max(line.min_order, Math.floor(qty) || line.min_order));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
   const hydrated = useRef(false);
@@ -62,7 +68,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setLines((prev) => {
       const existing = prev.find((l) => l.product_id === product.id);
       if (existing) {
-        return prev.map((l) => (l.product_id === product.id ? { ...l, quantity: l.quantity + qty } : l));
+        return prev.map((l) =>
+          l.product_id === product.id
+            ? { ...l, stock: product.stock, quantity: clampQty(l.quantity + qty, { ...l, stock: product.stock }) }
+            : l,
+        );
       }
       return [
         ...prev,
@@ -73,7 +83,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           unit: product.unit,
           price: product.price,
           min_order: product.min_order,
-          quantity: qty,
+          quantity: clampQty(qty, product),
+          stock: product.stock,
           seller_id: product.seller_id,
           seller_name: product.seller_company || product.seller_name || "Vendeur",
           tiers: product.tiers,
@@ -84,7 +95,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const setQuantity = useCallback((productId: number, quantity: number) => {
     setLines((prev) =>
-      prev.map((l) => (l.product_id === productId ? { ...l, quantity: Math.max(l.min_order, quantity) } : l)),
+      prev.map((l) => (l.product_id === productId ? { ...l, quantity: clampQty(quantity, l) } : l)),
     );
   }, []);
 

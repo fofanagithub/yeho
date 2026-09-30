@@ -2,6 +2,7 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import { Minus, Plus, ShoppingCart, Store, Trash2, Truck } from "lucide-react-native";
 import { TopBar } from "@/components/layout/TopBar";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { EmptyState } from "@/components/ui/feedback";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { imageUrl } from "@/lib/image";
-import { formatGNF } from "@/lib/utils";
+import { formatGNF, unitLabel } from "@/lib/utils";
 
 const DELIVERY_FEE = 150000;
 
@@ -17,6 +18,8 @@ export default function Cart() {
   const insets = useSafeAreaInsets();
   const { lines, bySeller, subtotal, setQuantity, remove, clear, unitPrice } = useCart();
   const { user } = useAuth();
+  const { colorScheme } = useColorScheme();
+  const iconColor = colorScheme === "dark" ? "#e4e4e7" : "#09090b";
 
   if (!lines.length) {
     return (
@@ -89,7 +92,7 @@ export default function Cart() {
                       </View>
                       <Text className="text-sm font-bold text-brand">
                         {formatGNF(price)}
-                        <Text className="text-xs font-normal text-muted dark:text-muted-dark"> / {line.unit}</Text>
+                        <Text className="text-xs font-normal text-muted dark:text-muted-dark"> / {unitLabel(line.unit)}</Text>
                       </Text>
                       <View className="flex-row items-center justify-between">
                         <View className="flex-row items-center gap-2">
@@ -98,14 +101,15 @@ export default function Cart() {
                             disabled={line.quantity <= line.min_order}
                             className="size-7 rounded-lg border border-line dark:border-line-dark items-center justify-center disabled:opacity-40"
                           >
-                            <Minus size={14} color="#09090b" />
+                            <Minus size={14} color={iconColor} />
                           </Pressable>
                           <Text className="w-10 text-center text-sm font-semibold text-fg dark:text-fg-dark">{line.quantity}</Text>
                           <Pressable
                             onPress={() => setQuantity(line.product_id, line.quantity + 1)}
-                            className="size-7 rounded-lg border border-line dark:border-line-dark items-center justify-center"
+                            disabled={!!line.stock && line.quantity >= line.stock}
+                            className="size-7 rounded-lg border border-line dark:border-line-dark items-center justify-center disabled:opacity-40"
                           >
-                            <Plus size={14} color="#09090b" />
+                            <Plus size={14} color={iconColor} />
                           </Pressable>
                         </View>
                         <Text className="text-sm font-semibold text-fg dark:text-fg-dark">{formatGNF(price * line.quantity)}</Text>

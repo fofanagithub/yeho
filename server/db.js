@@ -146,12 +146,67 @@ CREATE TABLE IF NOT EXISTS reviews (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- Moderation (exigence App Store 1.2 pour le contenu publie par les utilisateurs)
+CREATE TABLE IF NOT EXISTS reports (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  reporter_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_type  TEXT NOT NULL CHECK (target_type IN ('product','user','message','review')),
+  target_id    INTEGER NOT NULL,
+  reason       TEXT NOT NULL,
+  details      TEXT,
+  status       TEXT NOT NULL DEFAULT 'ouvert' CHECK (status IN ('ouvert','traite','rejete')),
+  resolution   TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at  TEXT,
+  UNIQUE (reporter_id, target_type, target_id)
+);
+
+CREATE TABLE IF NOT EXISTS blocks (
+  blocker_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (blocker_id, blocked_id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
+CREATE INDEX IF NOT EXISTS idx_reports_target ON reports(target_type, target_id);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE INDEX IF NOT EXISTS idx_products_cat ON products(category);
 CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
 CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id);
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
 `);
+
+/**
+ * sans_accent(texte) : minuscules sans accents, pour une recherche qui trouve
+ * « Pâtes » en tapant « pates » (beaucoup tapent sans accents sur telephone).
+ */
+export function sansAccent(value) {
+  return String(value)
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase();
+}
+
+sqlite.function("sans_accent", { deterministic: true }, (value) => (value == null ? null : sansAccent(value)));
+
+/**
+ * Colonnes ajoutees apres coup : CREATE TABLE IF NOT EXISTS ne touche pas une
+ * base existante, on les ajoute donc a la main si elles manquent.
+ */
+function addColumn(table, column, definition) {
+  const exists = sqlite
+    .prepare(`PRAGMA table_info(${table})`)
+    .all()
+    .some((c) => c.name === column);
+  if (!exists) sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+addColumn("users", "terms_accepted_at", "TEXT");
+addColumn("users", "banned_at", "TEXT");
+addColumn("users", "deleted_at", "TEXT");
+addColumn("products", "hidden_at", "TEXT");
+addColumn("reviews", "hidden_at", "TEXT");
 
 /**
  * Petite facade au-dessus de DatabaseSync.

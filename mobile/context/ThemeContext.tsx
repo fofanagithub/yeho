@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 
@@ -54,6 +55,14 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 
   const resolved: ThemeResolved = colorScheme === "dark" ? "sombre" : "clair";
+
+  // Sur le web, `darkMode: "class"` attend une classe .dark sur <html> : sans
+  // elle, le mode automatique d'un systeme sombre garde l'interface claire
+  // tandis que les couleurs calculees en JS (icones) passent en sombre.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+    document.documentElement.classList.toggle("dark", resolved === "sombre");
+  }, [resolved]);
 
   const value = useMemo(
     () => ({ preference, resolved, setPreference }),

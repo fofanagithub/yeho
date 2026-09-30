@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 import { Router } from "express";
 import multer from "multer";
 import db from "../db.js";
-import { requireAuth, optionalAuth } from "../auth.js";
+import { requireAuth, optionalAuth, blockedIds } from "../auth.js";
+import { refreshRating } from "../ratings.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const uploadDir = path.join(__dirname, "..", "uploads");
@@ -32,7 +33,7 @@ router.get("/favorites", requireAuth, (req, res) => {
        FROM favorites f
        JOIN products p ON p.id = f.product_id
        JOIN users u ON u.id = p.seller_id
-       WHERE f.user_id = ? ORDER BY f.created_at DESC`,
+       WHERE f.user_id = ? AND p.hidden_at IS NULL AND u.banned_at IS NULL ORDER BY f.created_at DESC`,
     )
     .all(req.user.id);
   res.json({ products: rows.map((r) => ({ ...r, is_favorite: true })) });
@@ -57,45 +58,76 @@ router.get("/sellers/:id", optionalAuth, (req, res) => {
     .prepare(
       `SELECT id, name, company, role, category, region, prefecture, address, description,
               avatar_url, verified, rating, rating_count, created_at
-       FROM users WHERE id = ?`,
+       FROM users WHERE id = ? AND deleted_at IS NULL AND banned_at IS NULL`,
     )
     .get(req.params.id);
   if (!seller) return res.status(404).json({ error: "Vendeur introuvable" });
 
+  const me = req.user?.id;
+  const blocked = me
+    ? !!db.prepare("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?").get(me, seller.id)
+    : false;
+  const hiddenAuthors = blockedIds(me);
+
   const products = db
-    .prepare("SELECT * FROM products WHERE seller_id = ? AND status = 'active' ORDER BY created_at DESC")
+    .prepare(
+      "SELECT * FROM products WHERE seller_id = ? AND status = 'active' AND hidden_at IS NULL ORDER BY created_at DESC",
+    )
     .all(seller.id);
   const reviews = db
     .prepare(
       `SELECT r.*, u.name AS author_name FROM reviews r
-       JOIN users u ON u.id = r.author_id WHERE r.seller_id = ? ORDER BY r.created_at DESC LIMIT 20`,
+       JOIN users u ON u.id = r.author_id
+       WHERE r.seller_id = ? AND r.hidden_at IS NULL AND u.banned_at IS NULL
+       ORDER BY r.created_at DESC LIMIT 20`,
     )
-    .all(seller.id);
+    .all(seller.id)
+    .filter((r) => !hiddenAuthors.includes(r.author_id));
   const sales = db
     .prepare("SELECT COUNT(*) AS n FROM orders WHERE seller_id = ? AND status = 'livree'")
     .get(seller.id).n;
 
-  res.json({ seller: { ...seller, verified: !!seller.verified }, products, reviews, sales });
+  res.json({ seller: { ...seller, verified: !!seller.verified }, products, reviews, sales, blocked });
 });
 
+/**
+ * POST /api/sellers/:id/reviews { rating, comment? }
+ * Reserve aux acheteurs ayant recu au moins une commande de ce vendeur ;
+ * un seul avis par acheteur et par vendeur (un nouvel envoi le met a jour).
+ */
 router.post("/sellers/:id/reviews", requireAuth, (req, res) => {
-  const rating = Math.min(5, Math.max(1, Number(req.body?.rating) || 0));
-  if (!rating) return res.status(400).json({ error: "Note invalide" });
-  db.prepare("INSERT INTO reviews (seller_id, author_id, rating, comment) VALUES (?, ?, ?, ?)").run(
-    req.params.id,
-    req.user.id,
-    rating,
-    req.body?.comment || null,
-  );
-  const agg = db
-    .prepare("SELECT AVG(rating) AS avg, COUNT(*) AS n FROM reviews WHERE seller_id = ?")
-    .get(req.params.id);
-  db.prepare("UPDATE users SET rating = ?, rating_count = ? WHERE id = ?").run(
-    Math.round(agg.avg * 10) / 10,
-    agg.n,
-    req.params.id,
-  );
-  res.status(201).json({ ok: true, rating: Math.round(agg.avg * 10) / 10, count: agg.n });
+  const sellerId = Number(req.params.id);
+  const rating = Number(req.body?.rating);
+  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+    return res.status(400).json({ error: "Choisissez une note de 1 à 5 étoiles" });
+  }
+  if (sellerId === req.user.id) return res.status(400).json({ error: "Vous ne pouvez pas vous noter vous-même" });
+
+  const bought = db
+    .prepare("SELECT 1 FROM orders WHERE buyer_id = ? AND seller_id = ? AND status = 'livree' LIMIT 1")
+    .get(req.user.id, sellerId);
+  if (!bought) {
+    return res.status(403).json({ error: "Vous pourrez noter ce vendeur après avoir reçu une commande" });
+  }
+
+  const comment = req.body?.comment ? String(req.body.comment).trim().slice(0, 1000) || null : null;
+  const existing = db.prepare("SELECT id FROM reviews WHERE seller_id = ? AND author_id = ?").get(sellerId, req.user.id);
+  if (existing) {
+    db.prepare("UPDATE reviews SET rating = ?, comment = ?, created_at = datetime('now') WHERE id = ?").run(
+      rating,
+      comment,
+      existing.id,
+    );
+  } else {
+    db.prepare("INSERT INTO reviews (seller_id, author_id, rating, comment) VALUES (?, ?, ?, ?)").run(
+      sellerId,
+      req.user.id,
+      rating,
+      comment,
+    );
+  }
+  const agg = refreshRating(sellerId);
+  res.status(existing ? 200 : 201).json({ ok: true, ...agg });
 });
 
 /* ---------- Tableau de bord vendeur ---------- */
@@ -121,7 +153,8 @@ router.get("/stats", requireAuth, (req, res) => {
   const monthly = db
     .prepare(
       `SELECT strftime('%Y-%m', created_at) AS month, COUNT(*) AS orders, IFNULL(SUM(total),0) AS revenue
-       FROM orders WHERE seller_id = ? GROUP BY month ORDER BY month DESC LIMIT 6`,
+       FROM orders WHERE seller_id = ? AND status != 'annulee'
+       GROUP BY month ORDER BY month DESC LIMIT 6`,
     )
     .all(id);
 
@@ -130,7 +163,7 @@ router.get("/stats", requireAuth, (req, res) => {
 
 /* ---------- Upload d'images ---------- */
 router.post("/upload", requireAuth, upload.single("image"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "Image manquante ou format non supporte" });
+  if (!req.file) return res.status(400).json({ error: "Image manquante ou format non supporté" });
   res.status(201).json({ url: `/uploads/${req.file.filename}` });
 });
 

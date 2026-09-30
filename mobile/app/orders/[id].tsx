@@ -5,17 +5,20 @@ import { Image } from "expo-image";
 import * as Clipboard from "expo-clipboard";
 import { Check, CircleDot, Copy, MapPin, MessageCircle, Package, Phone, Truck, XCircle } from "lucide-react-native";
 import { api } from "@/lib/api";
+import { useIconColor } from "@/lib/useIconColor";
+import { confirmAction } from "@/lib/confirm";
 import type { Order, OrderStatus } from "@/lib/types";
-import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE, PAYMENT_METHODS } from "@/lib/constants";
+import { ORDER_STATUS_LABEL, ORDER_STATUS_STYLE, ORDER_STATUS_TEXT, PAYMENT_METHODS } from "@/lib/constants";
 import { TopBar } from "@/components/layout/TopBar";
 import { RequireAuth } from "@/components/layout/RequireAuth";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Spinner } from "@/components/ui/feedback";
+import { ReviewCard } from "@/components/ReviewCard";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { imageUrl } from "@/lib/image";
-import { cn, formatDate, formatGNF, formatTime } from "@/lib/utils";
+import { cn, formatDate, formatGNF, formatTime, unitLabel } from "@/lib/utils";
 
 const STEPS: { status: OrderStatus; label: string }[] = [
   { status: "en_attente", label: "Commande reçue" },
@@ -37,6 +40,7 @@ function OrderTracking() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const toast = useToast();
+  const iconColor = useIconColor();
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +57,16 @@ function OrderTracking() {
       alive = false;
     };
   }, [id]);
+
+  function confirmCancel() {
+    confirmAction({
+      title: "Annuler la commande ?",
+      message: "L'autre partie sera prévenue. Cette action est définitive.",
+      confirmLabel: "Annuler la commande",
+      cancelLabel: "Non",
+      onConfirm: () => changeStatus("annulee"),
+    });
+  }
 
   async function changeStatus(status: OrderStatus) {
     if (!order) return;
@@ -91,6 +105,9 @@ function OrderTracking() {
   }
 
   const isSeller = user?.id === order.seller_id;
+  // Memes regles que le serveur : l'acheteur annule avant confirmation,
+  // le vendeur peut refuser ou annuler tant que le colis n'est pas parti.
+  const canCancel = (isSeller ? ["en_attente", "confirmee", "en_preparation"] : ["en_attente"]).includes(order.status);
   const partner = isSeller ? order.buyer : order.seller;
   const currentIndex = STEPS.findIndex((s) => s.status === order.status);
   const cancelled = order.status === "annulee";
@@ -122,7 +139,7 @@ function OrderTracking() {
           </View>
           <View className="flex-1">
             <View className={cn("self-start rounded-full px-2.5 py-0.5", ORDER_STATUS_STYLE[order.status])}>
-              <Text className="text-[11px] font-semibold">{ORDER_STATUS_LABEL[order.status]}</Text>
+              <Text className={cn("text-[11px] font-semibold", ORDER_STATUS_TEXT[order.status])}>{ORDER_STATUS_LABEL[order.status]}</Text>
             </View>
             <Text className="mt-1 text-sm font-semibold text-fg dark:text-fg-dark">
               {cancelled ? "Commande annulée" : order.status === "livree" ? "Colis livré, merci !" : "Livraison estimée sous 2 à 5 jours"}
@@ -181,7 +198,7 @@ function OrderTracking() {
           <View className="flex-row gap-2">
             {partner.phone ? (
               <Pressable onPress={() => Linking.openURL(`tel:${partner.phone}`)} className="size-9 rounded-full bg-subtle dark:bg-subtle-dark items-center justify-center">
-                <Phone size={16} color="#09090b" />
+                <Phone size={16} color={iconColor} />
               </Pressable>
             ) : null}
             <Pressable onPress={openChat} className="size-9 rounded-full bg-brand items-center justify-center">
@@ -212,7 +229,7 @@ function OrderTracking() {
                     {item.title}
                   </Text>
                   <Text className="text-xs text-muted dark:text-muted-dark">
-                    {item.quantity} {item.unit} × {formatGNF(item.unit_price)}
+                    {item.quantity} {unitLabel(item.unit, item.quantity)} × {formatGNF(item.unit_price)}
                   </Text>
                 </View>
                 <Text className="text-sm font-semibold text-fg dark:text-fg-dark">{formatGNF(item.unit_price * item.quantity)}</Text>
@@ -251,6 +268,14 @@ function OrderTracking() {
           {order.note ? <Text className="text-xs text-muted dark:text-muted-dark">Note : {order.note}</Text> : null}
         </View>
 
+        {!isSeller && order.status === "livree" ? (
+          <ReviewCard
+            sellerId={order.seller_id}
+            sellerName={order.seller.company || order.seller.name}
+            initial={order.my_review}
+          />
+        ) : null}
+
         {!cancelled ? (
           <View className="flex-col gap-2">
             {isSeller && nextStep ? (
@@ -264,9 +289,9 @@ function OrderTracking() {
                 <Text className="font-semibold text-white text-base ml-2">Confirmer la réception</Text>
               </Button>
             ) : null}
-            {order.status === "en_attente" ? (
-              <Button variant="ghost" textClassName="text-rose-600" loading={updating} onPress={() => changeStatus("annulee")}>
-                Annuler la commande
+            {canCancel ? (
+              <Button variant="ghost" textClassName="text-rose-600" loading={updating} onPress={confirmCancel}>
+                {isSeller && order.status === "en_attente" ? "Refuser la commande" : "Annuler la commande"}
               </Button>
             ) : null}
           </View>

@@ -5,7 +5,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   BadgeCheck,
+  Ban,
   ChevronRight,
+  FileText,
   Heart,
   LogOut,
   Mail,
@@ -15,12 +17,14 @@ import {
   Pencil,
   Phone,
   Settings,
+  Lock,
   ShieldCheck,
   ShoppingBag,
   Star,
   Store,
   Sun,
   SunMoon,
+  Trash2,
   TrendingUp,
 } from "lucide-react-native";
 import { api } from "@/lib/api";
@@ -243,7 +247,14 @@ function Profile() {
             </View>
           </View>
 
-          <View className="p-5 pt-8">
+          <View className="flex-col gap-2 px-5 pt-6">
+            <Text className="mb-1 font-semibold text-base text-fg dark:text-fg-dark">Compte et sécurité</Text>
+            <MenuLink onPress={() => router.push("/account/blocked")} icon={<Ban size={20} color="#71717b" />} label="Comptes bloqués" />
+            <MenuLink onPress={() => router.push("/legal/cgu")} icon={<FileText size={20} color="#71717b" />} label="Conditions d'utilisation" />
+            <MenuLink onPress={() => router.push("/legal/confidentialite")} icon={<Lock size={20} color="#71717b" />} label="Confidentialité" />
+          </View>
+
+          <View className="p-5 pt-8 gap-3">
             <Button
               variant="secondary"
               className="w-full"
@@ -251,6 +262,10 @@ function Profile() {
             >
               <LogOut size={16} color="#e11d48" />
               <Text className="font-semibold text-rose-600 dark:text-rose-400 text-sm ml-2">Se déconnecter</Text>
+            </Button>
+            <Button variant="ghost" className="w-full" onPress={() => router.push("/account/delete")}>
+              <Trash2 size={16} color="#8e8e98" />
+              <Text className="text-muted dark:text-muted-dark text-sm ml-2">Supprimer mon compte</Text>
             </Button>
           </View>
         </>

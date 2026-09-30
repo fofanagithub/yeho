@@ -27,11 +27,12 @@ import { Button } from "@/components/ui/button";
 import { Badge, Spinner } from "@/components/ui/feedback";
 import { Avatar } from "@/components/ui/avatar";
 import { ProductCard } from "@/components/ProductCard";
+import { ModerationMenu } from "@/components/ModerationSheet";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
 import { imageUrl, TAILLES } from "@/lib/image";
-import { cn, formatGNF, formatNumber } from "@/lib/utils";
+import { cn, formatGNF, formatNumber, unitLabel } from "@/lib/utils";
 
 export default function ProductDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,6 +45,9 @@ export default function ProductDetail() {
   const [product, setProduct] = useState<Product | null>(null);
   const [similar, setSimilar] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
+  // Texte du champ quantite : on laisse l'utilisateur effacer et retaper librement,
+  // la valeur n'est bornee (minimum, stock) qu'a la sortie du champ.
+  const [quantityText, setQuantityText] = useState("1");
   const [loading, setLoading] = useState(true);
   const [contacting, setContacting] = useState(false);
 
@@ -57,6 +61,7 @@ export default function ProductDetail() {
         setProduct(product);
         setSimilar(similar);
         setQuantity(product.min_order);
+        setQuantityText(String(product.min_order));
       })
       .catch(() => toast("Produit introuvable", "error"))
       .finally(() => alive && setLoading(false));
@@ -64,6 +69,16 @@ export default function ProductDetail() {
       alive = false;
     };
   }, [id]);
+
+  const qtyIconColor = colorScheme === "dark" ? "#e4e4e7" : "#09090b";
+
+  function changeQuantity(value: number) {
+    if (!product) return;
+    const max = product.stock > 0 ? product.stock : Infinity;
+    const next = Math.min(max, Math.max(product.min_order, Math.floor(value) || product.min_order));
+    setQuantity(next);
+    setQuantityText(String(next));
+  }
 
   const unitPrice = useCallback(
     (qty: number) => {
@@ -108,7 +123,7 @@ export default function ProductDetail() {
   function addToCart() {
     if (!product) return;
     add(product, quantity);
-    toast(`${quantity} ${product.unit}${quantity > 1 ? "s" : ""} ajouté(s) au panier`);
+    toast(`${quantity} ${unitLabel(product.unit, quantity)} ajouté${quantity > 1 ? "s" : ""} au panier`);
   }
 
   if (loading) return <Spinner className="flex-1 bg-canvas dark:bg-canvas-dark" />;
@@ -150,9 +165,17 @@ export default function ProductDetail() {
             <Pressable onPress={() => router.back()} className="size-9 rounded-full bg-white/90 items-center justify-center">
               <ChevronLeft size={20} color="#09090b" />
             </Pressable>
-            <Pressable onPress={toggleFavorite} className="size-9 rounded-full bg-white/90 items-center justify-center">
-              <Heart size={20} color={product.is_favorite ? "#f43f5e" : "#71717b"} fill={product.is_favorite ? "#f43f5e" : "none"} />
-            </Pressable>
+            <View className="flex-row gap-2">
+              <ModerationMenu
+                target={{ type: "product", id: product.id }}
+                person={{ id: product.seller_id, name: product.seller_company || product.seller_name || "ce vendeur" }}
+                onBlockedChange={(blocked) => blocked && router.back()}
+                className="bg-white/90"
+              />
+              <Pressable onPress={toggleFavorite} className="size-9 rounded-full bg-white/90 items-center justify-center">
+                <Heart size={20} color={product.is_favorite ? "#f43f5e" : "#71717b"} fill={product.is_favorite ? "#f43f5e" : "none"} />
+              </Pressable>
+            </View>
           </View>
         </View>
 
@@ -161,7 +184,7 @@ export default function ProductDetail() {
             <View className="flex-row flex-wrap items-center gap-2">
               {category ? (
                 <View className={cn("rounded-full px-2.5 py-0.5", category.color)}>
-                  <Text className="text-[11px] font-semibold">{category.label}</Text>
+                  <Text className={cn("text-[11px] font-semibold", category.text)}>{category.label}</Text>
                 </View>
               ) : null}
               {product.negotiable ? <Badge variant="muted">Prix négociable</Badge> : null}
@@ -191,7 +214,7 @@ export default function ProductDetail() {
               <View className="flex-row items-center gap-1">
                 <Package size={14} color="#71717b" />
                 <Text className="text-xs text-muted dark:text-muted-dark">
-                  commande minimum {product.min_order} {product.unit}
+                  commande minimum {product.min_order} {unitLabel(product.unit, product.min_order)}
                 </Text>
               </View>
             </View>
@@ -199,7 +222,7 @@ export default function ProductDetail() {
 
           <View className="flex-row items-end gap-2">
             <Text className="font-extrabold text-brand text-2xl leading-8">{formatGNF(price)}</Text>
-            <Text className="pb-1 text-sm text-muted dark:text-muted-dark">/ {product.unit}</Text>
+            <Text className="pb-1 text-sm text-muted dark:text-muted-dark">/ {unitLabel(product.unit)}</Text>
             {price < product.price ? (
               <Text className="pb-1 text-sm text-faint dark:text-faint-dark line-through">{formatGNF(product.price)}</Text>
             ) : null}
@@ -220,7 +243,7 @@ export default function ProductDetail() {
                   )}
                 >
                   <Text className="text-sm text-muted dark:text-muted-dark">
-                    À partir de {t.min_qty} {product.unit}
+                    À partir de {t.min_qty} {unitLabel(product.unit, t.min_qty)}
                   </Text>
                   <Text className="text-sm font-semibold text-fg dark:text-fg-dark">{formatGNF(t.price)}</Text>
                 </View>
@@ -237,23 +260,26 @@ export default function ProductDetail() {
             </View>
             <View className="flex-row items-center gap-3">
               <Pressable
-                onPress={() => setQuantity((q) => Math.max(product.min_order, q - 1))}
+                onPress={() => changeQuantity(quantity - 1)}
                 disabled={quantity <= product.min_order}
                 className="size-9 rounded-lg border border-line dark:border-line-dark items-center justify-center disabled:opacity-40"
               >
-                <Minus size={16} color="#09090b" />
+                <Minus size={16} color={qtyIconColor} />
               </Pressable>
               <TextInput
-                value={String(quantity)}
-                onChangeText={(v) => setQuantity(Math.max(product.min_order, Number(v) || product.min_order))}
-                keyboardType="numeric"
+                value={quantityText}
+                onChangeText={(v) => setQuantityText(v.replace(/[^0-9]/g, ""))}
+                onBlur={() => changeQuantity(Number(quantityText))}
+                onSubmitEditing={() => changeQuantity(Number(quantityText))}
+                keyboardType="number-pad"
                 className="w-14 text-center font-semibold text-sm text-fg dark:text-fg-dark"
               />
               <Pressable
-                onPress={() => setQuantity((q) => q + 1)}
-                className="size-9 rounded-lg border border-line dark:border-line-dark items-center justify-center"
+                onPress={() => changeQuantity(quantity + 1)}
+                disabled={product.stock > 0 && quantity >= product.stock}
+                className="size-9 rounded-lg border border-line dark:border-line-dark items-center justify-center disabled:opacity-40"
               >
-                <Plus size={16} color="#09090b" />
+                <Plus size={16} color={qtyIconColor} />
               </Pressable>
             </View>
           </View>

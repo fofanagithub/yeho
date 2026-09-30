@@ -28,6 +28,8 @@ export interface PriceTier {
 export interface Product {
   id: number;
   seller_id: number;
+  /** Renseigne quand la moderation a masque l'annonce (visible seulement par son vendeur). */
+  hidden_at?: string | null;
   title: string;
   description: string | null;
   category: string;
@@ -101,6 +103,8 @@ export interface Order {
   events: OrderEvent[];
   seller: Partial<User> & { id: number; name: string };
   buyer: Partial<User> & { id: number; name: string };
+  /** Avis deja laisse par l'acheteur a ce vendeur (renvoye sur le detail d'une commande). */
+  my_review?: { rating: number; comment: string | null } | null;
 }
 
 export interface Message {
@@ -132,6 +136,8 @@ export interface CartLine {
   price: number;
   min_order: number;
   quantity: number;
+  /** Stock connu lors de l'ajout au panier (le serveur revérifie à la commande). */
+  stock?: number;
   seller_id: number;
   seller_name: string;
   tiers?: PriceTier[];
@@ -146,4 +152,15 @@ export interface SellerStats {
   revenue: number;
   unread: number;
   monthly: { month: string; orders: number; revenue: number }[];
+}
+
+export type ReportTarget = "product" | "user" | "message" | "review";
+
+export interface BlockedUser {
+  id: number;
+  name: string;
+  company: string | null;
+  role: Role;
+  avatar_url: string | null;
+  blocked_at: string;
 }

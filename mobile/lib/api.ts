@@ -3,11 +3,13 @@ import Constants from "expo-constants";
 import { Platform } from "react-native";
 
 import type {
+  BlockedUser,
   Conversation,
   Message,
   Order,
   OrderStatus,
   Product,
+  ReportTarget,
   SellerStats,
   User,
 } from "./types";
@@ -128,6 +130,9 @@ export const api = {
     ),
   updateMe: (payload: Record<string, unknown>) =>
     request<{ user: User }>("/auth/me", { method: "PATCH", body: JSON.stringify(payload) }),
+  /** Suppression definitive du compte (mot de passe requis). */
+  deleteAccount: (password: string) =>
+    request<{ ok: true }>("/auth/me", { method: "DELETE", body: JSON.stringify({ password }) }),
 
   /* --- Produits --- */
   products: (params: Record<string, string | number | undefined> = {}) =>
@@ -149,6 +154,7 @@ export const api = {
       products: Product[];
       reviews: { id: number; rating: number; comment: string | null; author_name: string; created_at: string }[];
       sales: number;
+      blocked: boolean;
     }>(`/sellers/${id}`),
   reviewSeller: (id: number, rating: number, comment?: string) =>
     request<{ ok: true }>(`/sellers/${id}/reviews`, {
@@ -176,12 +182,21 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   messages: (id: number | string) =>
-    request<{ conversation: Conversation; messages: Message[] }>(`/conversations/${id}/messages`),
+    request<{ conversation: Conversation; messages: Message[]; blocked: boolean; can_reply: boolean }>(
+      `/conversations/${id}/messages`,
+    ),
   sendMessage: (id: number, body: string) =>
     request<{ message: Message }>(`/conversations/${id}/messages`, {
       method: "POST",
       body: JSON.stringify({ body }),
     }),
+
+  /* --- Moderation --- */
+  report: (payload: { target_type: ReportTarget; target_id: number; reason: string; details?: string }) =>
+    request<{ ok: true }>("/reports", { method: "POST", body: JSON.stringify(payload) }),
+  blockedUsers: () => request<{ users: BlockedUser[] }>("/blocks"),
+  block: (userId: number) => request<{ blocked: boolean }>(`/blocks/${userId}`, { method: "POST" }),
+  unblock: (userId: number) => request<{ blocked: boolean }>(`/blocks/${userId}`, { method: "DELETE" }),
 
   /* --- Divers --- */
   favorites: () => request<{ products: Product[] }>("/favorites"),

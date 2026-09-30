@@ -194,6 +194,7 @@ export default function Register() {
     setLoading(true);
     try {
       const user = await register({
+        accept_terms: true,
         name: form.name,
         phone: form.phone,
         password: form.password,

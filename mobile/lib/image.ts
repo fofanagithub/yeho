@@ -1,3 +1,4 @@
+import { PixelRatio } from "react-native";
 import { resolveImageUrl } from "./api";
 
 /** Les photos de demo viennent d'Unsplash, qui accepte un redimensionnement par URL. */
@@ -12,7 +13,9 @@ export function imageUrl(url: string | null | undefined, width: number): string 
     const u = new URL(resolved);
     u.searchParams.set("auto", "format");
     u.searchParams.set("fit", "crop");
-    u.searchParams.set("w", String(Math.round(width)));
+    // `width` est en points : sur un ecran 3x (iPhone) il faut 3 fois plus de pixels,
+    // sinon l'image est floue. Plafonne a 2000 px pour ne pas gaspiller de donnees.
+    u.searchParams.set("w", String(Math.min(2000, Math.round(width * PixelRatio.get()))));
     u.searchParams.set("q", "70");
     return u.toString();
   } catch {
@@ -26,5 +29,5 @@ export const TAILLES = {
   carteGrille: 200,
   carteCarrousel: 176,
   ficheProduit: 440,
-  pleinEcran: 460,
+  pleinEcran: 800,
 } as const;

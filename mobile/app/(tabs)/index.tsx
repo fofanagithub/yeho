@@ -143,7 +143,7 @@ export default function Home() {
               style={{ width: "23%" }}
             >
               <View className={`size-14 rounded-2xl items-center justify-center ${c.color}`}>
-                <c.icon size={24} color="#374151" />
+                <c.icon size={24} color={c.hex} />
               </View>
               <Text className="text-[11px] font-medium text-center leading-tight text-fg dark:text-fg-dark">{c.label}</Text>
               <Text className="-mt-1 text-[10px] text-faint dark:text-faint-dark">{counts[c.value] || 0}</Text>

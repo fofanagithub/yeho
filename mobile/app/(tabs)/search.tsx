@@ -59,7 +59,16 @@ export default function Search() {
     [],
   );
 
+  // Recherche au fil de la frappe, une fois que l'utilisateur marque une pause.
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (trimmed === (params.q || "")) return;
+    const timer = setTimeout(() => updateParam("q", trimmed), 450);
+    return () => clearTimeout(timer);
+  }, [query, params.q, updateParam]);
+
   const resetFilters = useCallback(() => {
+    setQuery("");
     router.setParams({ q: undefined, category: undefined, region: undefined, sort: undefined, minPrice: undefined, maxPrice: undefined } as never);
   }, []);
 
